@@ -1,0 +1,33 @@
+3 alerte corelate
+  urgent: 1  high: 1  medium: 1
+
+[URGENT]  syn-002
+    ET WEB_SERVER Possible Command Injection Attempt
+    ruta     /api/admin/disk-stats
+    payload  path=;cat /etc/passwd
+    cod      CWE-78 -> ok (din cache)
+             app/apis/admin/utils.py  <-- potrivire cu ruta
+    · suprafata confirmata: 1 fisiere pentru CWE-78
+    · ruta atacata se potriveste cu app/apis/admin/utils.py (suprapunere 0.50)
+    · tentativa tintita pe cod vulnerabil identificat
+
+[HIGH]  syn-001
+    ET WEB_SPECIFIC_APPS SQL Injection Attempt
+    ruta     /api/menu
+    payload  id=1' OR '1'='1
+    cod      CWE-89 -> ok (din cache)
+             app/db/models.py
+    · suprafata confirmata: 1 fisiere pentru CWE-89
+    · localizare precisa, dar ruta nu se potriveste cu fisierele
+
+[MEDIUM]  syn-003
+    ET WEB_SERVER Directory Traversal Attempt
+    ruta     /static/../../../etc/shadow
+    cod      CWE-22 -> ok (din cache)
+             app/config.py
+             app/main.py
+             app/game.py
+             app/init_app.py
+    · suprafata confirmata: 4 fisiere pentru CWE-22
+    · localizare dispersata (4 fisiere); increderea in rezultat e scazuta
+

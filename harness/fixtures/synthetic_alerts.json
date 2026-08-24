@@ -1,0 +1,32 @@
+[
+  {
+    "alert_uuid": "syn-001",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "signature": "ET WEB_SPECIFIC_APPS SQL Injection Attempt",
+    "src_ip": "203.0.113.42",
+    "dest_ip": "10.0.0.5",
+    "http_url": "/api/menu?id=1' OR '1'='1",
+    "http_method": "GET",
+    "severity": "medium"
+  },
+  {
+    "alert_uuid": "syn-002",
+    "timestamp": "2026-08-21T10:05:00Z",
+    "signature": "ET WEB_SERVER Possible Command Injection Attempt",
+    "src_ip": "203.0.113.42",
+    "dest_ip": "10.0.0.5",
+    "http_url": "/api/admin/disk-stats?path=;cat /etc/passwd",
+    "http_method": "GET",
+    "severity": "high"
+  },
+  {
+    "alert_uuid": "syn-003",
+    "timestamp": "2026-08-21T10:10:00Z",
+    "signature": "ET WEB_SERVER Directory Traversal Attempt",
+    "src_ip": "198.51.100.7",
+    "dest_ip": "10.0.0.5",
+    "http_url": "/static/../../../etc/shadow",
+    "http_method": "GET",
+    "severity": "medium"
+  }
+]

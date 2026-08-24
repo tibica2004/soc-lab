@@ -1,0 +1,10 @@
+elastic-agent-*/
+*.json
+*.log
+*.pid
+benign/noise.log
+target/
+test-repos/
+*.tar.gz
+__pycache__/
+*.pyc

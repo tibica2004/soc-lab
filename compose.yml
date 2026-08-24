@@ -1,0 +1,40 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: es01
+    environment:
+        - node.name=es01
+        - discovery.type=single-node
+        - ELASTIC_PASSWORD=changeme123
+        - xpack.security.enabled=true
+        - xpack.security.http.ssl.enabled=false
+        - xpack.security.transport.ssl.enabled=false
+        - xpack.license.self_generated.type=basic
+        - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    ulimits:
+        memlock: { soft: -1, hard: -1 }
+    volumes:
+        - esdata:/usr/share/elasticsearch/data
+    ports:
+        - "192.168.56.10:9200:9200"
+
+
+  kibana:
+      image: docker.elastic.co/kibana/kibana:8.17.0
+      container_name: kib01
+      depends_on: [elasticsearch]
+      environment:
+        - ELASTICSEARCH_HOSTS=http://es01:9200
+        - ELASTICSEARCH_USERNAME=kibana_system
+        - ELASTICSEARCH_PASSWORD=changeme123
+        - SERVER_HOST=0.0.0.0
+        - SERVER_PUBLICBASEURL=http://192.168.56.10:5601
+        - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=a6012160f76beccb2da90f9f93331b2a377d78ea83fcedb19dc0002c5bfe3af9
+        - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=55f0668dbf14c51ce2d3cf035af63206c583cba8ca3c4fc65e07f7feb3855076
+        - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=bdae451c84584b74d727c30ce6b6263f8a4ef2eb7772ff20edb91080db5af823
+
+      ports:
+        - "192.168.56.10:5601:5601"
+
+volumes:
+    esdata:

@@ -1,0 +1,37 @@
+Experiment: sensibilitatea la tool-budget
+Data: 2026-08-21
+Setup: Antares-1B Q8_0, llama.cpp CPU, -c 8192 -t 4
+Target: Damn-Vulnerable-RESTaurant-API-Game @ d32d0997 (~2 MB)
+CWE: CWE-78
+
+buget  timp    fisiere gasite
+4      32.8s   app/apis/admin/utils.py
+6      37.8s   app/apis/admin/utils.py
+8      43.2s   app/apis/admin/utils.py
+15     64.6s   app/apis/admin/utils.py
+
+Observatie: rezultat identic, timp dublu. Pe repo-uri mici bugetul
+implicit e risipa. Traiectoriile arata repetitii de comenzi si deriva
+dupa ce raspunsul a fost deja gasit (vezi tool_blocked, duplicate).
+Limitare: un singur repo, un singur CWE, o rulare per buget.
+Modelul e nedeterminist (temperature 0.3) -> necesita repetari.
+
+REPETARI (3x per buget, aceeasi sesiune)
+buget  timpi           rezultat
+4      15, 16, 16s     3/3 app/apis/admin/utils.py
+8      29, 29, 31s     3/3 app/apis/admin/utils.py
+15     56, 77, 208s    2/3 admin/utils.py, 1/3 app/game.py
+
+Bugetul mare creste varianta de timp (factor 3.7) si scade consistenta
+rezultatului. Bugetul mic e stabil pe repo-uri mici.
+Timpii absoluti NU sunt comparabili intre sesiuni (cache de prompt).
+
+REPO MARE: django @ --depth 1, 87 MB, CWE-89
+buget  timp    rezultat
+4      54s     django/db/models/query.py
+8      64s     django/db/models/query.py
+15     696s    django/db/backends/oracle/schema.py
+
+Efectul se amplifica pe repo mare: 13x timp pentru un raspuns diferit.
+Ipoteza initiala (buget mare necesar pe repo mare) INFIRMATA.
+Limitare: fara ground truth pentru django, o singura rulare per buget.
