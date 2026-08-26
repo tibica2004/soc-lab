@@ -1,0 +1,25 @@
+# Capabilitati de triaj in text liber — Antares-1B
+
+Setup: Antares-1B Q8_0, llama.cpp CPU, -c 8192 -t 4, temperature 0.3
+Metoda: perechi de alerte identice ca regula si actiune, diferite DOAR
+prin context (proces parinte, activitate precedenta, rol al hostului).
+Script: harness/test_triage.py
+
+CONTRAZICE MODEL CARD-UL, care afirma ca modelul "may not perform well on
+general conversational or instruction-following tasks". Pe sarcini inguste
+si structurate, cu context pre-adus, functioneaza.
+
+Trei capabilitati confirmate azi:
+1. JSON structurat, consistent
+2. Discriminare pe context
+3. Tool calls pentru unelte NEVAZUTE la antrenament (test separat:
+   a apelat corect query_past_cases cu ambele argumente derivate din prompt)
+
+ESEC INSTRUCTIV (chmod): reason-ul era corect — "Consistent daily chmod 644
+on app access log indicates automated log rotation script" — dar verdictul
+a fost TP. Intelegerea e buna, maparea rationament->eticheta e defecta.
+Sugereaza o inclinatie spre TP in incertitudine.
+
+LIMITARI: 4 perechi scrise de mana, 5 repetari. Nu sustine nicio cifra.
+E o demonstratie ca fenomenul exista, nu o masuratoare.
+
