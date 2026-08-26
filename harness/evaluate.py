@@ -55,6 +55,7 @@ class GroundTruthWindow:
     end: datetime
     label: Label
     technique_id: str
+    expected_rules: frozenset[str] = frozenset()
     note: str = ""
 
     def contains(self, ts: datetime) -> bool:
@@ -100,17 +101,21 @@ def load_ground_truth(
                 continue
             if "stop" in notes and noise_start is not None:
                 windows.append(
-                    GroundTruthWindow(noise_start, ts, "FP", technique, row.get("notes", ""))
+                    GroundTruthWindow(noise_start, ts, "FP", technique,
+                                      frozenset(), row.get("notes", ""))
                 )
                 noise_start = None
                 continue
 
+            raw_rules = (row.get("expected_rules") or "").strip()
+            rules = frozenset(x.strip() for x in raw_rules.split("|") if x.strip())
             windows.append(
                 GroundTruthWindow(
                     ts,
                     ts + timedelta(seconds=window_seconds),
                     label,  # type: ignore[arg-type]
                     technique,
+                    rules,
                     row.get("notes", ""),
                 )
             )
@@ -138,7 +143,15 @@ def label_alerts(
         matches = [w for w in windows if w.contains(ts)]
         if not matches:
             continue
-        label: Label = "TP" if any(w.label == "TP" for w in matches) else "FP"
+
+        # TP cere fereastra SI regula asteptata. O alerta de discovery care
+        # cade langa un test Atomic nu e adevarat-pozitiva pentru acel test.
+        # Fara aceasta conditie, 7 tehnici produceau 65 "TP".
+        is_tp = any(
+            w.label == "TP" and w.expected_rules and alert.rule_name in w.expected_rules
+            for w in matches
+        )
+        label: Label = "TP" if is_tp else "FP"
         labelled.append((alert, label))
 
     return labelled
