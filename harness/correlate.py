@@ -144,6 +144,15 @@ def decide(c: Correlation) -> Correlation:
         r.append("scanarea de cod a esuat; incertitudine -> escaladare")
         return c
 
+    # Localizare dispersata: modelul nu a gasit tiparul, a returnat
+    # fisiere plauzibile tematic. Masurat: 4+ fisiere -> gresit 3/3 (O-004).
+    # Tratat ca lipsa de informatie, NU ca dovada de absenta.
+    if c.file_count >= 4:
+        c.priority = "medium"
+        r.append(f"localizare dispersata ({c.file_count} fisiere), incredere scazuta")
+        r.append("rezultatul scanarii nu e folosit in decizie")
+        return c
+
     # Scanare reusita, fara suprafata: probabil scan automat.
     if c.scan_status == "empty" or not c.has_surface:
         c.priority = "low"

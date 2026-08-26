@@ -68,8 +68,40 @@ class ScanResult:
 
     @property
     def has_surface(self) -> bool:
-        """Exista cod care ar putea fi vulnerabil la acest CWE?"""
+        """
+        DEPRECAT ca semnal de decizie. Masurat pe VLoc Bench faza B
+        (2026-08-26): TNR = 0.0 pe 30 de repo-uri deja reparate. Modelul
+        returneaza fisiere indiferent daca vulnerabilitatea exista.
+        Prin urmare acest semnal e mereu pozitiv si NU discrimineaza.
+        Pastrat doar pentru diagnostic. Foloseste `confidence`.
+        """
         return self.status == "ok" and bool(self.files)
+
+    @property
+    def confidence(self) -> str:
+        """
+        Incredere derivata din dispersia rezultatului.
+
+        Justificare empirica (O-004, n=6 pe DVRA):
+            1 fisier  -> corect 2/2
+            2 fisiere -> partial corect 1/1
+            4+        -> gresit 3/3
+        Confirmat indirect in faza B: cand nu are ce gasi, modelul
+        returneaza liste lungi (pana la 9 fisiere).
+        """
+        if self.status != "ok" or not self.files:
+            return "none"
+        n = len(self.files)
+        if n == 1:
+            return "high"
+        if n <= 3:
+            return "medium"
+        return "low"
+
+    @property
+    def is_actionable(self) -> bool:
+        """Rezultatul merita trimis unui analist?"""
+        return self.confidence in ("high", "medium")
 
 
 def repo_commit(repo: Path) -> str:
