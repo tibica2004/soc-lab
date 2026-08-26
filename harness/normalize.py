@@ -92,7 +92,18 @@ class NormalizedAlert:
 
     @property
     def fingerprint(self) -> str:
-        """Cheie de deduplicare folosita de pre-filtru (stratul L3)."""
+        """
+        Cheie de deduplicare folosita de pre-filtru (stratul L3).
+
+        Include linia de comanda pentru ca fara ea dedup-ul nu discrimineaza:
+        masurat 2026-08-26, un `useradd` de la scriptul de deploy si unul de
+        la Atomic Red Team sunt identice pe (rule_id, host, user, process),
+        deci al doilea se inchide ca duplicat al primului. FN rate 20%.
+
+        Limitare: `command_line` lipseste la 27% din alerte (O-002), cele
+        din system.auth si system.syslog. Pentru acelea, fingerprint-ul
+        ramane la fel de slab ca inainte -> vezi `fingerprint_is_weak`.
+        """
         return "|".join(
             str(x)
             for x in (
@@ -100,8 +111,14 @@ class NormalizedAlert:
                 self.host_id,
                 self.user_name,
                 self.process_name,
+                self.process_command_line,
             )
         )
+
+    @property
+    def fingerprint_is_weak(self) -> bool:
+        """Fingerprint fara camp discriminant: dedup-ul nu e sigur aici."""
+        return self.process_command_line is None
 
 
 def _as_list(value: Any) -> list[str]:

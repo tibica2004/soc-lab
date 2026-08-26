@@ -210,6 +210,50 @@ def triage_dedup(alerts: list[NormalizedAlert]) -> list[Verdict]:
     return out
 
 
+@triager("dedup_safe")
+def triage_dedup_safe(alerts: list[NormalizedAlert]) -> list[Verdict]:
+    """
+    Dedup care refuza sa inchida cand fingerprint-ul nu e discriminant.
+    Incertitudinea urca: fara linie de comanda nu poti sti daca doua
+    alerte identice pe restul campurilor sunt acelasi eveniment.
+    """
+    seen: set[str] = set()
+    out: list[Verdict] = []
+    for a in alerts:
+        if a.fingerprint_is_weak:
+            out.append("escalate")
+            continue
+        if a.fingerprint in seen:
+            out.append("auto_close")
+        else:
+            seen.add(a.fingerprint)
+            out.append("escalate")
+    return out
+
+
+@triager("prefilter_safe")
+def triage_prefilter_safe(alerts: list[NormalizedAlert]) -> list[Verdict]:
+    """
+    Pre-filtrul corectat: building_block + dedup prudent.
+    Ambele componente au FN rate 0 masurat separat.
+    """
+    seen: set[str] = set()
+    out: list[Verdict] = []
+    for a in alerts:
+        if a.is_building_block:
+            out.append("auto_close")
+            continue
+        if a.fingerprint_is_weak:
+            out.append("escalate")
+            continue
+        if a.fingerprint in seen:
+            out.append("auto_close")
+            continue
+        seen.add(a.fingerprint)
+        out.append("escalate")
+    return out
+
+
 @triager("prefilter")
 def triage_prefilter(alerts: list[NormalizedAlert]) -> list[Verdict]:
     """
@@ -353,7 +397,7 @@ def main() -> int:
         return 1
 
     if args.ablation:
-        order = ["none", "building_block", "dedup", "prefilter", "all"]
+        order = ["none", "building_block", "dedup", "dedup_safe", "prefilter", "prefilter_safe", "all"]
         rows = [evaluate(n, labelled, TRIAGERS[n]) for n in order if n in TRIAGERS]
         for m in rows:
             print_metrics(m)
