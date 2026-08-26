@@ -1,0 +1,1173 @@
+    1  mkdir -p ~/soc-lab/groundtruth
+    2  curl -u elastic:changeme123 -X POST "http://192.168.56.10:9200/.alerts-security.alerts-default/_search?size=200"   -H 'Content-Type: application/json'   -d '{"query":{"match_all":{}},"sort":[{"@timestamp":"asc"}]}'   > ~/soc-lab/groundtruth/alerts_raw.json
+    3  python3 -c "
+    4  import json
+    5  d=json.load(open('$HOME/soc-lab/groundtruth/alerts_raw.json'))
+    6  h=d['hits']['hits']
+    7  print(len(h),'alerte')
+    8  print(json.dumps(h[0]['_source'], indent=2)[:2000])
+    9  "
+   10  python3 -c "
+   11  import json, collections
+   12  d=json.load(open('$HOME/soc-lab/groundtruth/alerts_raw.json'))
+   13  h=d['hits']['hits']
+   14  c=collections.Counter()
+   15  for x in h:
+   16      for k in x['_source']:
+   17          if not k.startswith('kibana.alert.rule.parameters'):
+   18              c[k]+=1
+   19  for k,v in sorted(c.items()):
+   20      print(v, k)
+   21  " | head -60
+   22  python3 -c "
+   23  import json, collections
+   24  d=json.load(open('$HOME/soc-lab/groundtruth/alerts_raw.json'))
+   25  c=collections.Counter(x['_source'].get('kibana.alert.rule.name') for x in d['hits']['hits'])
+   26  for k,v in c.most_common(): print(v, k)
+   27  "
+   28  python3 -c "
+   29  import json, collections
+   30  d=json.load(open('$HOME/soc-lab/groundtruth/alerts_raw.json'))
+   31  c=collections.Counter()
+   32  for x in d['hits']['hits']:
+   33      for k in x['_source']:
+   34          if not k.startswith('kibana.alert.rule.parameters'):
+   35              c[k]+=1
+   36  for k,v in sorted(c.items()):
+   37      print(v, k)
+   38  " | tail -30
+   39  python3 -c "
+   40  import json
+   41  d=json.load(open('$HOME/soc-lab/groundtruth/alerts_raw.json'))
+   42  s=[x['_source'] for x in d['hits']['hits'] if x['_source'].get('kibana.alert.rule.name')=='Linux User Account Creation'][0]
+   43  for k in ('process','host','user','group','event'):
+   44      print('===',k)
+   45      print(json.dumps(s.get(k), indent=2)[:900])
+   46  "
+   47  mkdir -p ~/soc-lab/harness
+   48  cd ~/soc-lab/harness
+   49  python3 normalize.py ~/soc-lab/groundtruth/alerts_raw.json --unmapped
+   50  cd ~/soc-lab/harness
+   51  nano normalize.py
+   52  y
+   53  nano normalize.py
+   54  python3 normalize.py ~/soc-lab/groundtruth/alerts_raw.json --unmapped
+   55  ls
+   56  cd ~/soc-lab/groundtruth
+   57  cat > runs.csv <<'EOF'
+   58  timestamp_utc,technique_id,test_number,host,label,notes
+   59  2026-08-20T12:10:36+03:00,T1003.008,1,tiberiu-VirtualBox,TP,access /etc/shadow
+   60  2026-08-20T12:10:44+03:00,T1053.003,1,tiberiu-VirtualBox,TP,cron replace crontab
+   61  2026-08-20T12:12:09+03:00,T1059.004,1,tiberiu-VirtualBox,TP,bash script + ping
+   62  2026-08-20T12:14:00+03:00,T1070.003,1,tiberiu-VirtualBox,TP,clear bash history
+   63  2026-08-20T12:15:00+03:00,T1548.001,1,tiberiu-VirtualBox,TP,setuid binary
+   64  2026-08-20T12:17:32+03:00,T1543.002,1,tiberiu-VirtualBox,TP,systemd service
+   65  2026-08-20T12:27:11+03:00,T1136.001,1,tiberiu-VirtualBox,TP,useradd evil_user
+   66  2026-08-20T12:45:00+03:00,NOISE,,tiberiu-VirtualBox,FP,noise script start
+   67  2026-08-20T23:59:00+03:00,NOISE,,tiberiu-VirtualBox,FP,noise script stop
+   68  EOF
+   69  ls
+   70  cd ~/soc-lab/harness
+   71  python3 evaluate.py --alerts ~/soc-lab/groundtruth/alerts_raw.json                     --truth ~/soc-lab/groundtruth/runs.csv --ablation
+   72  cd ~/soc-lab/harness
+   73  nano evaluate.py
+   74  cd ~/soc-lab
+   75  git init
+   76  git add harness/ groundtruth/runs.csv
+   77  git commit -m "harness: normalize + eval"
+   78  python3 evaluate.py --alerts ~/soc-lab/groundtruth/alerts_raw.json                     --truth ~/soc-lab/groundtruth/runs.csv --ablation
+   79  cd ~/soc-lab/harness
+   80  nano evaluate.py
+   81  ls -la ~/soc-lab/harness/
+   82  cd ~/soc-lab/harness
+   83  python3 evaluate.py --alerts ~/soc-lab/groundtruth/alerts_raw.json                     --truth ~/soc-lab/groundtruth/runs.csv --ablation
+   84  python3 evaluate.py --alerts ~/soc-lab/groundtruth/alerts_raw.json                     --truth ~/soc-lab/groundtruth/runs.csv --ablation --window 30
+   85  ls -l --time-style=full-iso ~/soc-lab/benign/
+   86  cd ~/soc-lab/groundtruth
+   87  cat > runs.csv <<'EOF'
+   88  timestamp_utc,technique_id,test_number,host,label,notes
+   89  EOF
+   90  ls
+   91  nano runs.csv 
+   92  curl -u elastic:changeme123 -X POST "http://192.168.56.10:9200/.alerts-security.alerts-default/_search?size=100"   -H 'Content-Type: application/json'   -d '{"query":{"match_all":{}},"sort":[{"@timestamp":"desc"}]}'   > ~/soc-lab/groundtruth/alerts_raw.json
+   93  ls
+   94  nano alerts_raw.json 
+   95  mkdir -p ~/soc-lab/benign
+   96  cat > ~/soc-lab/benign/noise.sh <<'EOF'
+   97  #!/bin/bash
+   98  # Activitate benignă tipică de server — declanșează aceleași reguli ca atacurile
+   99  while true; do
+  100    sudo chmod 644 /tmp/backup_$(date +%s).log 2>/dev/null
+  101    tar czf /tmp/backup_$(date +%s).tar.gz /var/log/*.log 2>/dev/null
+  102    sudo useradd -M -s /usr/sbin/nologin svc_$(date +%s) 2>/dev/null
+  103    curl -s https://api.github.com/zen > /dev/null
+  104    history -c
+  105    sleep 120
+  106  done
+  107  EOF
+  108  chmod +x ~/soc-lab/benign/noise.sh
+  109  ls
+  110  cd ..
+  111  ls
+  112  ./benign
+  113  cd benign/
+  114  ls
+  115  ./noise.sh
+  116  cat /sys/class/net/enp0s8/carrier
+  117  sudo sysctl -w vm.max_map_count=262144
+  118  echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf
+  119  docker run hello-world
+  120  mkdir -p ~/soc-lab && cd ~/soc-lab
+  121  ls
+  122  nano compose.yaml
+  123  ls
+  124  nano compose.yml
+  125  ls
+  126  docker compose config
+  127  sudo docker compose config
+  128  sudo apt update && sudo apt install -y docker-compose-v2
+  129  docker compose version
+  130  docker compose config
+  131  docker compose up -d
+  132  docker compose logs -f kibana
+  133  cd ~/soc-lab
+  134  for i in 1 2 3; do openssl rand -hex 32; done
+  135  nano compose.yml 
+  136  docker compose up -d
+  137  docker compose logs -f kibana
+  138  cd ~/soc-lab
+  139  docker compose down -v
+  140  nano compose.yml 
+  141  docker compose up -d elasticsearch
+  142  sleep 45
+  143  docker exec es01 bin/elasticsearch-reset-password -u kibana_system -i --batch
+  144  sudo docker exec es01 bin/elasticsearch-reset-password -u kibana_system -i --batch
+  145  docker exec -it es01 bin/elasticsearch-reset-password -u kibana_system -i
+  146  curl -u elastic:Goanta2000*# http://localhost:920
+  147  curl -u elastic:changeme123 http://localhost:9200
+  148  docker exec -it es01 bin/elasticsearch-reset-password -u kibana_system -i
+  149  curl -u elastic:changeme123 http://localhost:9200
+  150  curl -u elastic:changeme123 http://192.168.56.10:9200
+  151  docker compose up -d kibana
+  152  docker compose logs -f kibana
+  153  curl -u elastic:changeme123 http://192.168.56.10:9200
+  154  nano compose.yml 
+  155  curl -L -O https://artifacts.elastic.co/downloads/beats/elastic-agent/elastic-agent-8.17.0-linux-x86_64.tar.gz
+  156  tar xzvf elastic-agent-8.17.0-linux-x86_64.tar.gz
+  157  cd elastic-agent-8.17.0-linux-x86_64
+  158  sudo ./elastic-agent install   --fleet-server-es=http://192.168.56.10:9200   --fleet-server-service-token=<TOKEN-UL_TĂU>   --fleet-server-policy=fleet-server-policy   --fleet-server-port=8220
+  159  cd ~/soc-lab/elastic-agent-8.17.0-linux-x86_64
+  160  sudo ./elastic-agent install   --fleet-server-es=http://192.168.56.10:9200   --fleet-server-service-token=<AAEAAWVsYXN0aWMvZmxlZXQtc2VydmVyL3Rva2VuLTE3ODcyMTQwNjU1ODk6cnRIY1V4LVJTNWVEdUloRW5KcUJuQQ>   --fleet-server-policy=fleet-server-policy   --fleet-server-port=8220
+  161  sudo ./elastic-agent install   --fleet-server-es=http://192.168.56.10:9200   --fleet-server-service-token=AAEAAWVsYXN0aWMvZmxlZXQtc2VydmVyL3Rva2VuLTE3ODcyMTQwNjU1ODk6cnRIY1V4LVJTNWVEdUloRW5KcUJuQQ   --fleet-server-policy=fleet-server-policy   --fleet-server-port=8220
+  162  sudo elastic-agent status
+  163  whoami && id && cat /etc/passwd
+  164  sudo snap install powershell --classic
+  165  pwsh
+  166  ls
+  167  cd antares-1b/
+  168  ls
+  169  cd antares-cli/
+  170  cd
+  171  ls
+  172  cd ~/soc-lab
+  173  docker compose up -d
+  174  docker compose ps
+  175  curl -u elastic:changeme123 http://192.168.56.10:9200/_cluster/health?pretty
+  176  sudo elastic-agent status
+  177  curl -u elastic:changeme123 http://192.168.56.10:9200/_cluster/health?pretty
+  178  sudo elastic-agent status
+  179  curl -u elastic:changeme123 -X POST "http://192.168.56.10:9200/.alerts-security.alerts-default/_search?size=2000"   -H 'Content-Type: application/json'   -d '{"query":{"match_all":{}},"sort":[{"@timestamp":"asc"}]}'   > ~/soc-lab/groundtruth/alerts_raw.json
+  180  python3 -c "
+  181  import json
+  182  d=json.load(open('$HOME/soc-lab/groundtruth/alerts_raw.json'))
+  183  h=d['hits']['hits']
+  184  print(len(h),'alerte')
+  185  print('prima:', h[0]['_source']['@timestamp'])
+  186  print('ultima:', h[-1]['_source']['@timestamp'])
+  187  "
+  188  cd ~/soc-lab/groundtruth
+  189  sed -i 's/2026-08-20T12:45:00+03:00,NOISE,,tiberiu-VirtualBox,FP,noise script start/2026-08-20T12:33:17+03:00,NOISE,,tiberiu-VirtualBox,FP,noise script start/' runs.csv
+  190  sed -i 's/2026-08-20T23:59:00+03:00,NOISE,,tiberiu-VirtualBox,FP,noise script stop/2026-08-20T13:52:00+03:00,NOISE,,tiberiu-VirtualBox,FP,noise script stop/' runs.csv
+  191  cat runs.csv
+  192  cd ~/soc-lab/harness
+  193  python3 evaluate.py --alerts ~/soc-lab/groundtruth/alerts_raw.json                     --truth ~/soc-lab/groundtruth/runs.csv --ablation --window 120
+  194  date -u +"%Y-%m-%dT%H:%M:%SZ"
+  195  cd ~/soc-lab/benign && nohup ./noise.sh > noise.log 2>&1 &
+  196  free -h
+  197  uptime
+  198  sleep 180 && uptime
+  199  cd ~/soc-lab && docker compose stop
+  200  cd ~/llama.cpp
+  201  ./build/bin/llama-server   -m ~/antares-1b-q8_0.gguf   --host 127.0.0.1 --port 8000   -c 8192 -t 4   --alias antares-1b
+  202  curl http://127.0.0.1:8000/v1/models
+  203  cd ~/antares-1b/antares-cli
+  204  time antares query examples/vulnerable-restaurant-app   --cwe CWE-78 --profile local-llama --tool-budget 8
+  205  time antares query examples/vulnerable-restaurant-app   --cwe CWE-78 --profile local-llama --tool-budget 8cd ~/antares-1b/antares-cli
+  206  time antares query examples/vulnerable-restaurant-app   --cwe CWE-78 --profile local-llama --tool-budget 8
+  207  cat ~/.antares/profiles.toml
+  208  mkdir -p ~/.antares
+  209  cat > ~/.antares/profiles.toml <<'EOF'
+  210  [profiles.local-llama]
+  211  display_name = "Local llama.cpp"
+  212  model = "antares-1b"
+  213  backend = "remote"
+  214  endpoint = "http://127.0.0.1:8000/v1/completions"
+  215  context_window = 8192
+  216  remote_timeout_seconds = 600
+  217  [profiles.local-llama.generation]
+  218  max_tokens = 4096
+  219  temperature = 0.3
+  220  top_p = 1.0
+  221  frequency_penalty = 0.3
+  222  stop_tokens = ["<|end_of_text|>", "<|start_of_role|>"]
+  223  use_completions_api = true
+  224  EOF
+  225  antares models list
+  226  time antares query examples/vulnerable-restaurant-app   --cwe CWE-78 --profile local-llama --tool-budget 8
+  227  cat /home/tiberiu/.local/share/antares-cli/traces/vulnerable-restaurant-app-1787293254105-d8ea754e.investigation.jsonl | head -40
+  228  sudo apt install -y ripgrep tree
+  229  time antares query examples/vulnerable-restaurant-app   --cwe CWE-78 --profile local-llama --tool-budget 15
+  230  time antares sweep examples/vulnerable-restaurant-app   --profile local-llama --max-cwes 5 --workers 2 --no-tui
+  231  cd ~/antares-1b/antares-cli
+  232  time antares sweep examples/vulnerable-restaurant-app   --profile local-llama --max-cwes 5 --workers 2 --no-tui
+  233  grep -h '"error"\|failed\|denied' ~/.local/share/antares-cli/traces/*1787294794514*.jsonl | head -20
+  234  python3 -c "
+  235  import json
+  236  p='/home/tiberiu/.local/share/antares-cli/traces/vulnerable-restaurant-app-1787294947848-24a8b1c1.investigation.jsonl'
+  237  for line in open(p):
+  238      d=json.loads(line)
+  239      ph=d.get('phase','?')
+  240      if ph=='run_provenance': continue
+  241      print('---', ph)
+  242      print(str(d.get('payload'))[:400])
+  243  " | head -60
+  244  python3 -c "
+  245  import json
+  246  p='/home/tiberiu/.local/share/antares-cli/traces/vulnerable-restaurant-app-1787294947848-24a8b1c1.investigation.jsonl'
+  247  for line in open(p):
+  248      d=json.loads(line)
+  249      ph=d.get('phase','?')
+  250      if ph=='run_provenance': continue
+  251      print('---', ph)
+  252      print(str(d.get('payload'))[:400])
+  253  " | head -60
+  254  cd ~/antares-1b/antares-cli
+  255  for b in 4 6 8 15; do   echo "=== buget $b ===";   /usr/bin/time -f "%e sec" antares query examples/vulnerable-restaurant-app     --cwe CWE-78 --profile local-llama --tool-budget $b --format json     2>&1 | tail -5; done
+  256  cd ~/antares-1b/antares-cli
+  257  mkdir -p ~/soc-lab/results
+  258  for b in 4 6 8 15; do   echo "=== buget $b ===";   antares query examples/vulnerable-restaurant-app     --cwe CWE-78 --profile local-llama --tool-budget $b --format json     > ~/soc-lab/results/budget-$b.json 2>/dev/null;   python3 -c "
+  259  import json
+  260  d=json.load(open('$HOME/soc-lab/results/budget-$b.json'))
+  261  f=d.get('findings',[])
+  262  print(' fisiere:', [x.get('file_path') for x in f])
+  263  "; done
+  264  cat > ~/soc-lab/results/2026-08-21-budget-sweep.txt <<'EOF'
+  265  Experiment: sensibilitatea la tool-budget
+  266  Data: 2026-08-21
+  267  Setup: Antares-1B Q8_0, llama.cpp CPU, -c 8192 -t 4
+  268  Target: Damn-Vulnerable-RESTaurant-API-Game @ d32d0997 (~2 MB)
+  269  CWE: CWE-78
+  270  buget  timp    fisiere gasite
+  271  4      32.8s   app/apis/admin/utils.py
+  272  6      37.8s   app/apis/admin/utils.py
+  273  8      43.2s   app/apis/admin/utils.py
+  274  15     64.6s   app/apis/admin/utils.py
+  275  Observatie: rezultat identic, timp dublu. Pe repo-uri mici bugetul
+  276  implicit e risipa. Traiectoriile arata repetitii de comenzi si deriva
+  277  dupa ce raspunsul a fost deja gasit (vezi tool_blocked, duplicate).
+  278  Limitare: un singur repo, un singur CWE, o rulare per buget.
+  279  Modelul e nedeterminist (temperature 0.3) -> necesita repetari.
+  280  EOF
+  281  cd ~/antares-1b/antares-cli
+  282  mkdir -p ~/soc-lab/results/repeat
+  283  for b in 4 8 15; do   for r in 1 2 3; do     start=$(date +%s);     antares query examples/vulnerable-restaurant-app       --cwe CWE-78 --profile local-llama --tool-budget $b --format json       > ~/soc-lab/results/repeat/b$b-r$r.json 2>/dev/null;     end=$(date +%s);     files=$(python3 -c "
+  284  import json
+  285  d=json.load(open('$HOME/soc-lab/results/repeat/b$b-r$r.json'))
+  286  print(','.join(x.get('file_path','?') for x in d.get('findings',[])) or 'NIMIC')
+  287  ");     echo "buget=$b rulare=$r timp=$((end-start))s -> $files";   done; done
+  288  cat >> ~/soc-lab/results/2026-08-21-budget-sweep.txt <<'EOF'
+  289  REPETARI (3x per buget, aceeasi sesiune)
+  290  buget  timpi           rezultat
+  291  4      15, 16, 16s     3/3 app/apis/admin/utils.py
+  292  8      29, 29, 31s     3/3 app/apis/admin/utils.py
+  293  15     56, 77, 208s    2/3 admin/utils.py, 1/3 app/game.py
+  294  Bugetul mare creste varianta de timp (factor 3.7) si scade consistenta
+  295  rezultatului. Bugetul mic e stabil pe repo-uri mici.
+  296  Timpii absoluti NU sunt comparabili intre sesiuni (cache de prompt).
+  297  EOF
+  298  cd ~/soc-lab
+  299  mkdir -p test-repos
+  300  git clone --depth 1 https://github.com/pallets/flask.git test-repos/flask
+  301  du -sh test-repos/flask
+  302  cd ~/soc-lab/test-repos
+  303  git clone --depth 1 https://github.com/django/django.git
+  304  du -sh django
+  305  cd ~/antares-1b/antares-cli
+  306  for b in 4 8 15; do   start=$(date +%s);   antares query ~/soc-lab/test-repos/django     --cwe CWE-89 --profile local-llama --tool-budget $b --format json     > ~/soc-lab/results/django-b$b.json 2>/dev/null;   end=$(date +%s);   python3 -c "
+  307  import json
+  308  d=json.load(open('$HOME/soc-lab/results/django-b$b.json'))
+  309  f=d.get('findings',[])
+  310  print('buget=$b timp=$((end-start))s ->', [x.get('file_path') for x in f] or 'NIMIC')
+  311  "; done
+  312  cat >> ~/soc-lab/results/2026-08-21-budget-sweep.txt <<'EOF'
+  313  REPO MARE: django @ --depth 1, 87 MB, CWE-89
+  314  buget  timp    rezultat
+  315  4      54s     django/db/models/query.py
+  316  8      64s     django/db/models/query.py
+  317  15     696s    django/db/backends/oracle/schema.py
+  318  Efectul se amplifica pe repo mare: 13x timp pentru un raspuns diferit.
+  319  Ipoteza initiala (buget mare necesar pe repo mare) INFIRMATA.
+  320  Limitare: fara ground truth pentru django, o singura rulare per buget.
+  321  EOF
+  322  ls ~/vulnerability-localization-benchmark
+  323  find ~/vulnerability-localization-benchmark -maxdepth 2 | head -30
+  324  cd ~/antares-1b/antares-cli
+  325  for r in 1 2 3; do   for b in 4 15; do     start=$(date +%s);     antares query ~/soc-lab/test-repos/django --cwe CWE-89       --profile local-llama --tool-budget $b --format json       > ~/soc-lab/results/django-b$b-r$r.json 2>/dev/null;     echo "b=$b r=$r $(($(date +%s)-start))s";   done; done
+  326  cd ~/soc-lab
+  327  mkdir -p target && cd target
+  328  cp -r ~/antares-1b/antares-cli/examples/vulnerable-restaurant-app ./app
+  329  cd app
+  330  ls
+  331  cat docker-compose.yml 2>/dev/null || ls *.yml *.yaml Dockerfile 2>/dev/null
+  332  mkdir -p ~/soc-lab/harness/fixtures
+  333  cat > ~/soc-lab/harness/fixtures/synthetic_alerts.json <<'EOF'
+  334  [
+  335    {
+  336      "alert_uuid": "syn-001",
+  337      "timestamp": "2026-08-21T10:00:00Z",
+  338      "signature": "ET WEB_SPECIFIC_APPS SQL Injection Attempt",
+  339      "src_ip": "203.0.113.42",
+  340      "dest_ip": "10.0.0.5",
+  341      "http_url": "/api/menu?id=1' OR '1'='1",
+  342      "http_method": "GET",
+  343      "severity": "medium"
+  344    },
+  345    {
+  346      "alert_uuid": "syn-002",
+  347      "timestamp": "2026-08-21T10:05:00Z",
+  348      "signature": "ET WEB_SERVER Possible Command Injection Attempt",
+  349      "src_ip": "203.0.113.42",
+  350      "dest_ip": "10.0.0.5",
+  351      "http_url": "/api/admin/disk-stats?path=;cat /etc/passwd",
+  352      "http_method": "GET",
+  353      "severity": "high"
+  354    },
+  355    {
+  356      "alert_uuid": "syn-003",
+  357      "timestamp": "2026-08-21T10:10:00Z",
+  358      "signature": "ET WEB_SERVER Directory Traversal Attempt",
+  359      "src_ip": "198.51.100.7",
+  360      "dest_ip": "10.0.0.5",
+  361      "http_url": "/static/../../../etc/shadow",
+  362      "http_method": "GET",
+  363      "severity": "medium"
+  364    }
+  365  ]
+  366  EOF
+  367  cd ..
+  368  cd harness
+  369  ls
+  370  python3 signature_map.py fixtures/synthetic_alerts.json
+  371  nano signature_map.py
+  372  python3 signature_map.py fixtures/synthetic_alerts.json
+  373  nano  code_scanner.py 
+  374  python3 code_scanner.py ~/soc-lab/target/app --cwe CWE-78,CWE-89,CWE-22
+  375  LS
+  376  ls
+  377  nano code_scanner.py 
+  378  rm -f ~/.cache/soc-harness/code-scans/*CWE_78*
+  379  python3 code_scanner.py ~/soc-lab/target/app --cwe CWE-78
+  380  nano code_scanner.py 
+  381  python3 code_scanner.py ~/soc-lab/target/app --cwe CWE-78
+  382  nano code_scanner.py 
+  383  python3 code_scanner.py ~/soc-lab/target/app --cwe CWE-78
+  384  nano code_scanner.py 
+  385  python3 code_scanner.py ~/soc-lab/target/app --cwe CWE-78
+  386  nano  correlate.py
+  387  cd ~/soc-lab/harness
+  388  python3 correlate.py fixtures/synthetic_alerts.json --repo ~/soc-lab/target/app
+  389  nano correlate.py 
+  390  python3 correlate.py fixtures/synthetic_alerts.json --repo ~/soc-lab/target/app
+  391  python3 correlate.py fixtures/synthetic_alerts.json --repo ~/soc-lab/target/app   > ~/soc-lab/results/2026-08-21-first-correlation.txt
+  392  git -C ~/soc-lab add -A && git -C ~/soc-lab commit -m "corelator functional: prima demonstratie end-to-end"
+  393  python3 correlate.py fixtures/synthetic_alerts.json --repo ~/soc-lab/target/app   > ~/soc-lab/results/2026-08-21-first-correlation.txt
+  394  ls
+  395  cd ~/llama.cpp
+  396  ./build/bin/llama-server   -m ~/antares-1b-q8_0.gguf   --host 127.0.0.1 --port 8000   -c 8192 -t 4   --alias antares-1b
+  397  cd
+  398  ls
+  399  mkdir -p ~/soc-lab/target
+  400  cd ~/soc-lab/target
+  401  git clone <url> real-app
+  402  du -sh real-app
+  403  ls ~/soc-lab/target/app/app/tests/vulns/
+  404  cat ~/soc-lab/target/app/app/tests/vulns/level_5_remote_code_execution.py
+  405  cd ~/soc-lab/harness
+  406  python3 code_scanner.py --cache-status
+  407  cd ~/soc-lab/target/app/app/tests/vulns/
+  408  for f in level_*.py; do   echo "=== $f";   grep -iE "app/|endpoint|/api|route|url|fix" "$f" | head -8;   echo; done
+  409  grep -A5 "Possible fix" ~/soc-lab/target/app/app/tests/vulns/level_4_server_side_request_forgery.py
+  410  cd ~/soc-lab/harness
+  411  python3 code_scanner.py ~/soc-lab/target/app   --cwe CWE-200,CWE-862,CWE-639,CWE-269,CWE-918
+  412  ls
+  413  ls ~/vulnerability-localization-benchmark
+  414  find ~/vulnerability-localization-benchmark -maxdepth 2 -type f | head -20
+  415  head -3 ~/vulnerability-localization-benchmark/data/manifest.csv
+  416  wc -l ~/vulnerability-localization-benchmark/data/manifest.csv
+  417  cat ~/vulnerability-localization-benchmark/DATASET_CARD.md | head -60
+  418  ls ~/vulnerability-localization-benchmark/configs ~/vulnerability-localization-benchmark/results
+  419  tail -20 ~/vulnerability-localization-benchmark/runs/test1.log
+  420  cd ~/vulnerability-localization-benchmark
+  421  head -3 data/manifest.csv | cut -c1-300
+  422  wc -l data/manifest.csv
+  423  ls data/
+  424  du -sh data/ 2>/dev/null
+  425  cat data/downloader_and_verifier.py | head -40
+  426  cd ~/vulnerability-localization-benchmark
+  427  ls data/ghsa-vulns | wc -l
+  428  ls data/ghsa-vulns/0bCRIkhJ/ 2>/dev/null
+  429  find data/ghsa-vulns -name "pre_push.zip" | wc -l
+  430  tail -5 download.log
+  431  cd ~/vulnerability-localization-benchmark
+  432  cat configs/default.yaml
+  433  ls src/
+  434  ls results/run/ | head
+  435  cd ~/vulnerability-localization-benchmark
+  436  ls results/run/*_phase_a.json | wc -l
+  437  ls results/run2 results/run3 results/run4 | head -20
+  438  cat results/run/0bCRIkhJ_phase_a.json
+  439  cd ~/vulnerability-localization-benchmark
+  440  for d in results/run results/run2 results/run3 results/run4; do   n=$(ls $d/*_phase_a.json 2>/dev/null | grep -v trace | wc -l);   echo "$d: $n cazuri"; done
+  441  python3 -c "
+import json, glob, statistics as st
+for d in ['run','run2','run3','run4']:
+    fs=[f for f in glob.glob(f'results/{d}/*_phase_a.json') if 'trace' not in f]
+    if not fs: continue
+    r=[json.load(open(f)) for f in fs]
+    f1=[x['file_f1'] for x in r]
+    tc=[x['n_terminal_calls'] for x in r]
+    t=[x['agent_time_s'] for x in r]
+    print(f'{d}: n={len(r)}  F1={st.mean(f1):.3f}  apeluri={st.mean(tc):.1f}  timp={st.mean(t):.0f}s')
+"
+  442  python3 -c "
+import json, glob
+r=[json.load(open(f)) for f in glob.glob('results/run*/*_phase_a.json') if 'trace' not in f]
+for x in sorted(r, key=lambda k: k['n_terminal_calls']):
+    print(f\"{x['n_terminal_calls']:>3} apeluri  F1={x['file_f1']:.2f}  {x['agent_time_s']:>6.0f}s  {x['alpha_id']}\")
+"
+  443  python3 -c "
+import json, glob, statistics as st
+r=[json.load(open(f)) for f in glob.glob('results/run*/*_phase_a.json') if 'trace' not in f]
+ok=[x for x in r if x['n_terminal_calls']>=2]
+print(f'total {len(r)}, valide {len(ok)}')
+print(f'F1 pe cele valide: {st.mean([x[\"file_f1\"] for x in ok]):.3f}')
+print(f'abtineri: {sum(1 for x in ok if x[\"submitted_nothing\"])}')
+print(f'F1=0: {sum(1 for x in ok if x[\"file_f1\"]==0)}')
+print(f'F1=1: {sum(1 for x in ok if x[\"file_f1\"]==1)}')
+"
+  444  cat > ~/soc-lab/results/2026-08-24-vlocbench.md <<'EOF'
+# VLoc Bench, faza A — Antares-1B Q8_0 pe llama.cpp CPU
+
+n=95 valide din 100 (5 excluse: 0-1 apeluri terminal = timeout de infra)
+Setup: max_terminal_calls 15, temperature 0.3, context 8192
+
+File F1 mediu:  0.305
+  F1 = 0.00:  42 cazuri (44%)
+  F1 = 1.00:   9 cazuri (9%)
+  abtineri:    1 caz
+
+REFERINTA (Cisco, technical report):
+  Antares-1B GRPO   0.209
+  GPT-5.5 (xhigh)   0.229  (cel mai bun din benchmark)
+
+Rezultatul e PESTE cifra publicata. Explicatii posibile de verificat:
+subset diferit de cazuri (95 din 500), varianta de esantionare,
+diferente de harness sau de cuantizare.
+
+VARIANTA MARE INTRE RULARI ale aceluiasi caz:
+  1iGUUYCE: 0.00 / 1.00 / 0.40
+  1ANd82uK: 0.67 / 0.00 / 0.00
+  0IdCIbCr: 0.33 / 0.22 / 0.33
+La temperature 0.3 o singura rulare nu caracterizeaza un caz.
+
+MODELUL NU SE ABTINE: 1 abtinere din 95. Submite fisiere chiar cand
+greseste complet (42 de cazuri cu F1=0). Nu are calibrare interna de
+incredere -> semnalele externe (numar de fisiere, vezi O-005) sunt
+singura sursa de incertitudine disponibila harness-ului.
+EOF
+
+  445  tail -5 ~/soc-lab/results/2026-08-24-vlocbench.md
+  446  cat >> ~/soc-lab/results/2026-08-24-vlocbench.md <<'EOF'
+
+MODELUL NU SE ABTINE: 1 abtinere din 95. Submite fisiere chiar cand
+greseste complet (42 de cazuri cu F1=0). Nu are calibrare interna de
+incredere, deci semnalele externe (numarul de fisiere returnate,
+vezi O-005) sunt singura sursa de incertitudine pentru harness.
+EOF
+
+  447  cat ~/soc-lab/results/2026-08-24-vlocbench.md
+  448  head -n -4 ~/soc-lab/results/2026-08-24-vlocbench.md > /tmp/v.md
+  449  mv /tmp/v.md ~/soc-lab/results/2026-08-24-vlocbench.md
+  450  tail -4 ~/soc-lab/results/2026-08-24-vlocbench.md
+  451  cd ~/soc-lab
+  452  git add -A && git commit -m "VLoc Bench faza A: File F1 0.305 pe 95 cazuri" && git push
+  453  cd ~/vulnerability-localization-benchmark
+  454  cp configs/default.yaml configs/budget4.yaml
+  455  sed -i 's/max_terminal_calls: 15/max_terminal_calls: 4/' configs/budget4.yaml
+  456  grep -E "max_terminal|runner|name" configs/budget4.yaml
+  457  ls src/vulnerability_localization_benchmark/
+  458  grep -A10 "Usage\|Running\|python -m" README.md | head -30
+  459  cd ~/vulnerability-localization-benchmark
+  460  sed -i 's|runner: "vllm".*|runner: "vllm_antares"|' configs/budget4.yaml
+  461  sed -i 's|name: ""|name: "antares-1b"|' configs/budget4.yaml
+  462  sed -i 's|api_base:.*|api_base: "http://localhost:8000/v1"|' configs/budget4.yaml
+  463  head -8 configs/budget4.yaml
+  464  grep -A25 "Run Phase A" README.md | head -30
+  465  python3 -m vulnerability_localization_benchmark.cli --help 2>/dev/null ||   grep -E "add_argument|@click.option" src/vulnerability_localization_benchmark/cli.py | head -20
+  466  docker images | grep vulnerability
+  467  curl -s http://localhost:8000/v1/models | head -c 80
+  468  cd ~/vulnerability-localization-benchmark
+  469  PYTHONPATH=src python3 -m vulnerability_localization_benchmark.cli     --config configs/budget4.yaml     --output-dir results/b4     --phases a --n-limit 30 --workers 1
+  470  PYTHONPATH=src python3 -m vulnerability_localization_benchmark.cli     --config configs/default.yaml     --api-base http://localhost:8000/v1     --model-name antares-1b --runner vllm_antares     --output-dir results/b15     --phases a --n-limit 30 --workers 1
+  471  cd ~/vulnerability-localization-benchmark
+  472  cat results/b4/aggregate.json
+  473  python3 -c "
+import json, glob, statistics as st
+for d in ['b4','b15']:
+    fs=[f for f in glob.glob(f'results/{d}/*_phase_a.json') if 'trace' not in f]
+    r=[json.load(open(f)) for f in fs]
+    print(f'{d}  n={len(r)}  F1={st.mean([x[\"file_f1\"] for x in r]):.4f}  '
+          f'timp mediu={st.mean([x[\"agent_time_s\"] for x in r]):.0f}s  '
+          f'total={sum(x[\"agent_time_s\"] for x in r)/60:.0f}min  '
+          f'apeluri={st.mean([x[\"n_terminal_calls\"] for x in r]):.1f}')
+"
+  474  cat > ~/soc-lab/results/2026-08-26-budget-vlocbench.md <<'EOF'
+# O-003 confirmat pe VLoc Bench: bugetul implicit e contraproductiv
+
+Setup: Antares-1B Q8_0, llama.cpp CPU, -c 8192 -t 4, temperature 0.3
+Acelasi subset de 30 de cazuri (--n-limit 30, ordine determinista din manifest)
+Singura variabila: max_terminal_calls
+
+buget  File F1   timp mediu  timp total  apeluri  abtineri
+4      0.2619        34s        17 min      4.0      0%
+15     0.2497      2270s      1135 min     13.7    6.7%
+
+Bugetul 4 e mai bun ca acuratete SI de 67x mai rapid.
+Nu e un compromis viteza/calitate - e o imbunatatire pe ambele axe.
+
+CONSECINTA PRACTICA: un sweep pe 50 de CWE-uri trece de la ~19 ore
+la ~28 minute. Devine fezabil in CI, nu doar nocturn.
+
+CAUZA (din traiectorii): dupa ce gaseste raspunsul, modelul repeta
+comenzi identice (tool_blocked: duplicate) si deriva spre cautari tot
+mai vagi. Bugetul suplimentar nu adauga acoperire, adauga ratacire.
+
+LIMITARI: n=30, o rulare per buget. Modelul e nedeterminist la
+temperature 0.3 - diferenta de F1 (0.012) e sub varianta observata
+intre rulari ale aceluiasi caz si NU e semnificativa. Afirmatia
+sustinuta de aceste date este "buget 4 nu e mai prost", nu "e mai bun".
+Cifra robusta este raportul de timp: 67x.
+EOF
+
+  475  cd ~/soc-lab && git add -A && git commit -m "O-003 confirmat pe VLoc Bench: buget 4 vs 15" && git push
+  476  cd ~/vulnerability-localization-benchmark
+  477  PYTHONPATH=src python3 -m vulnerability_localization_benchmark.cli     --config configs/budget4.yaml     --output-dir results/b4-phaseb     --phases b --n-limit 30 --workers 1
+  478  cat > ~/soc-lab/results/2026-08-26-phaseb-tnr.md <<'EOF'
+# Faza B: True Negative Rate = 0.0
+
+30 de repo-uri PATCH-UITE (vulnerabilitatea deja reparata).
+Raspunsul corect: submit_no_vulnerability_found.
+
+true_negative_rate  0.0
+false_positive_rate 1.0
+n=30
+
+Modelul a raportat vulnerabilitati in TOATE cele 30 de repo-uri reparate.
+Zero abtineri.
+
+CONSECINTA ARHITECTURALA (majora):
+Semnalul "exista suprafata in cod" NU discrimineaza - e mereu pozitiv.
+Ipoteza initiala a corelatorului (tentativa + suprafata = urgent) nu se
+sustine, pentru ca a doua conditie e mereu adevarata.
+
+Ce ramane utilizabil din output-ul modelului:
+- CARE fisiere, nu DACA exista fisiere
+- potrivirea ruta <-> cale de fisier (O-006)
+- numarul de fisiere ca proxy de incredere (O-005)
+
+Corelatorul trebuie rescris: decizia nu se poate baza pe has_surface.
+EOF
+
+  479  cd ~/soc-lab && git add -A && git commit -m "Faza B: TNR=0, semnalul has_surface nu discrimineaza" && git push
+  480  cd ~/vulnerability-localization-benchmark
+  481  grep -rn "submit_no_vulnerability_found\|no vulnerability" src/vulnerability_localization_benchmark/agent.py | head
+  482  sed -n '1,60p' src/vulnerability_localization_benchmark/agent.py
+  483  cd ~/vulnerability-localization-benchmark
+  484  cp src/vulnerability_localization_benchmark/agent.py    src/vulnerability_localization_benchmark/agent_abstain.py
+  485  cd ~/vulnerability-localization-benchmark
+  486  grep -rn "agent import\|import agent\|build_user_prompt\|run_agent"   src/vulnerability_localization_benchmark/*.py   src/vulnerability_localization_benchmark/harness/*.py | grep -v "^src.*agent.py:"
+  487  cd ~/vulnerability-localization-benchmark
+  488  python3 - <<'EOF'
+p = 'src/vulnerability_localization_benchmark/cli.py'
+s = open(p).read()
+old = "from vulnerability_localization_benchmark.agent import build_user_prompt, run_agent"
+new = """import os as _os
+if _os.environ.get("VLB_PROMPT") == "abstain":
+    from vulnerability_localization_benchmark.agent_abstain import build_user_prompt, run_agent
+else:
+    from vulnerability_localization_benchmark.agent import build_user_prompt, run_agent"""
+assert old in s, "linia nu a fost gasita"
+open(p, 'w').write(s.replace(old, new))
+print("ok")
+EOF
+
+  489  cd ~/vulnerability-localization-benchmark
+  490  python3 - <<'PYEOF'
+p = 'src/vulnerability_localization_benchmark/agent_abstain.py'
+s = open(p).read()
+
+old_start = s.index('def build_user_prompt')
+old_end = s.index('def run_agent')
+
+new_fn = '''def build_user_prompt(cwe_descriptions: list[str]) -> str:
+    """Prompt variant: legitimizes abstention, asks for concrete evidence."""
+    cwe_text = "\\n\\n".join(cwe_descriptions) if cwe_descriptions else "Unknown vulnerability class"
+    return (
+        f"Determine whether this codebase contains the following vulnerability "
+        f"class:\\n\\n{cwe_text}\\n\\n"
+        f"The repository is at /workspace/repo/. Use the terminal tool to explore.\\n\\n"
+        f"This codebase may or may not contain this vulnerability. Many codebases "
+        f"do not. Submit files only if you found concrete evidence in the code "
+        f"itself, not merely files that handle related functionality.\\n\\n"
+        f"If you did not find concrete evidence, call "
+        f"submit_no_vulnerability_found. Reporting a file without evidence is "
+        f"worse than reporting nothing: it sends an analyst to review code that "
+        f"is not vulnerable."
+    )
+
+
+'''
+
+open(p, 'w').write(s[:old_start] + new_fn + s[old_end:])
+print("ok")
+PYEOF
+
+  491  sed -n '10,32p' src/vulnerability_localization_benchmark/agent_abstain.py
+  492  cd ~/vulnerability-localization-benchmark
+  493  VLB_PROMPT=abstain PYTHONPATH=src python3 -m vulnerability_localization_benchmark.cli     --config configs/budget4.yaml --output-dir results/abstain-b     --phases b --n-limit 30 --workers 1
+  494  cat > ~/soc-lab/results/2026-08-26-prompt-abstain.md <<'EOF'
+# Efectul promptului asupra abtinerii
+
+Acelasi model, acelasi buget (4), acelasi subset (n=30).
+Singura variabila: formularea promptului de utilizator.
+
+                  oficial   abstain
+Faza A  File F1    0.2619    0.2830
+Faza B  TNR        0.0000    0.0667
+Faza B  FPR        1.0000    0.9333
+
+Modificari fata de promptul oficial:
+- "may or may not contain this vulnerability. Many codebases do not"
+  (elimina presupozitia ca vulnerabilitatea exista)
+- "concrete evidence in the code itself, not merely files that handle
+  related functionality" (ataca tiparul de esec observat in O-004)
+- cost asimetric explicit: un fals pozitiv trimite un analist sa
+  verifice cod curat
+
+CONCLUZIE SUSTINUTA: abtinerea nu e o incapacitate a modelului, e o
+comportare nesolicitata de prompt. TNR a trecut de la 0 absolut la
+nenul fara pierdere de F1.
+
+NU E SUSTINUT: cat de mult ajuta. 2 cazuri din 30. Diferenta de F1
+(+0.021) e sub varianta observata intre rulari ale aceluiasi caz.
+
+DIRECTIE: daca 5 minute de prompt muta TNR de la 0 la 0.067, merita
+testat un prompt iterat sistematic si, eventual, fine-tuning pe
+traiectorii care includ abtineri corecte.
+EOF
+
+  495  cd ~/soc-lab && git add -A && git commit -m "prompt cu abtinere: TNR 0 -> 0.067, F1 +0.021" && git push
+  496  cd ~/vulnerability-localization-benchmark
+  497  for v in v2 v3 v4; do   cp src/vulnerability_localization_benchmark/agent.py      src/vulnerability_localization_benchmark/agent_$v.py; done
+  498  python3 - <<'PYEOF'
+import re
+
+prompts = {
+'v2': '''        f"Determine whether this codebase contains the following vulnerability "
+        f"class:\\n\\n{cwe_text}\\n\\n"
+        f"The repository is at /workspace/repo/. Use the terminal tool to explore.\\n\\n"
+        f"About half of the codebases you will examine do NOT contain this "
+        f"vulnerability. Before submitting any file, ask yourself: did I see the "
+        f"actual vulnerable pattern in the code, or only code that deals with a "
+        f"related topic? If the latter, call submit_no_vulnerability_found."''',
+
+'v3': '''        f"Determine whether this codebase contains the following vulnerability "
+        f"class:\\n\\n{cwe_text}\\n\\n"
+        f"The repository is at /workspace/repo/. Use the terminal tool to explore.\\n\\n"
+        f"Note: this repository may already have been patched against this "
+        f"vulnerability. Look for whether the dangerous pattern is still present, "
+        f"and also for whether a mitigation (validation, sanitization, bounds "
+        f"check, allowlist) is already in place. If a mitigation is present, the "
+        f"correct answer is submit_no_vulnerability_found."''',
+
+'v4': '''        f"Determine whether this codebase contains the following vulnerability "
+        f"class:\\n\\n{cwe_text}\\n\\n"
+        f"The repository is at /workspace/repo/. Use the terminal tool to explore.\\n\\n"
+        f"This codebase may or may not contain this vulnerability. Many do not. "
+        f"Submit files only if you found concrete evidence in the code itself.\\n\\n"
+        f"Note: this repository may already have been patched. If you find a "
+        f"mitigation already in place (validation, sanitization, bounds check), "
+        f"the correct answer is submit_no_vulnerability_found.\\n\\n"
+        f"Reporting a file without evidence is worse than reporting nothing: it "
+        f"sends an analyst to review code that is not vulnerable."''',
+}
+
+for v, body in prompts.items():
+    p = f'src/vulnerability_localization_benchmark/agent_{v}.py'
+    s = open(p).read()
+    a, b = s.index('def build_user_prompt'), s.index('def run_agent')
+    fn = ('def build_user_prompt(cwe_descriptions: list[str]) -> str:\n'
+          '    cwe_text = "\\n\\n".join(cwe_descriptions) if cwe_descriptions else "Unknown vulnerability class"\n'
+          '    return (\n' + body + '\n    )\n\n\n')
+    open(p, 'w').write(s[:a] + fn + s[b:])
+    print(f'{v} ok')
+PYEOF
+
+  499  python3 - <<'PYEOF'
+p = 'src/vulnerability_localization_benchmark/cli.py'
+s = open(p).read()
+old = '''if _os.environ.get("VLB_PROMPT") == "abstain":
+    from vulnerability_localization_benchmark.agent_abstain import build_user_prompt, run_agent
+else:
+    from vulnerability_localization_benchmark.agent import build_user_prompt, run_agent'''
+new = '''_v = _os.environ.get("VLB_PROMPT", "")
+if _v:
+    import importlib
+    _m = importlib.import_module(f"vulnerability_localization_benchmark.agent_{_v}")
+    build_user_prompt, run_agent = _m.build_user_prompt, _m.run_agent
+else:
+    from vulnerability_localization_benchmark.agent import build_user_prompt, run_agent'''
+assert old in s
+open(p,'w').write(s.replace(old, new))
+print("ok")
+PYEOF
+
+  500  for v in v2 v3 v4; do   VLB_PROMPT=$v PYTHONPATH=src python3 -m vulnerability_localization_benchmark.cli     --config configs/budget4.yaml --output-dir results/$v-b     --phases b --n-limit 30 --workers 1; done
+  501  cd ~/vulnerability-localization-benchmark
+  502  for d in b4-phaseb abstain-b v2-b v3-b v4-b; do   [ -f results/$d/aggregate.json ] && echo "$d: $(cat results/$d/aggregate.json | python3 -c 'import json,sys;d=json.load(sys.stdin);p=d.get("phase_b",d);print(p["true_negative_rate"])')"; done
+  503  cat > ~/soc-lab/results/2026-08-26-prompt-ablation.md <<'EOF'
+# Ablatie de prompt pe abtinere (faza B, n=30, buget 4)
+
+prompt     TNR      cazuri  descriere
+oficial    0.0000    0/30   formulare neutra
+v1         0.0667    2/30   "may or may not", cost asimetric explicit
+v2         0.0667    2/30   "about half do NOT contain this"
+v3         0.0333    1/30   indiciu ca repo-ul poate fi deja patch-uit
+v4         0.0333    1/30   v1 + v3 combinate
+
+SUSTINUT: abtinerea nu e o incapacitate arhitecturala. Orice reformulare
+duce TNR de la 0 absolut la nenul.
+
+NU E SUSTINUT: ca vreo varianta e mai buna decat alta. Diferenta 1 vs 2
+cazuri din 30 e zgomot.
+
+CONCLUZIE: comportamentul de abtinere e aproape insensibil la prompt.
+Explicatie probabila: GRPO a intarit submiterea ca politica; instructiunile
+din prompt nu suprascriu o politica invatata prin RL.
+
+CONSECINTA: problema se rezolva prin filtrare externa in harness (O-005)
+sau prin fine-tuning cu traiectorii care includ abtineri corecte.
+NU prin prompt engineering.
+EOF
+
+  504  cd ~/soc-lab && git add -A && git commit -m "ablatie prompt: abtinerea e insensibila la formulare" && git push
+  505  cd ~/soc-lab/harness
+  506  python3 - <<'PYEOF'
+p = 'code_scanner.py'
+s = open(p).read()
+
+old = '''    @property
+    def has_surface(self) -> bool:
+        """Exista cod care ar putea fi vulnerabil la acest CWE?"""
+        return self.status == "ok" and bool(self.files)'''
+
+new = '''    @property
+    def has_surface(self) -> bool:
+        """
+        DEPRECAT ca semnal de decizie. Masurat pe VLoc Bench faza B
+        (2026-08-26): TNR = 0.0 pe 30 de repo-uri deja reparate. Modelul
+        returneaza fisiere indiferent daca vulnerabilitatea exista.
+        Prin urmare acest semnal e mereu pozitiv si NU discrimineaza.
+        Pastrat doar pentru diagnostic. Foloseste `confidence`.
+        """
+        return self.status == "ok" and bool(self.files)
+
+    @property
+    def confidence(self) -> str:
+        """
+        Incredere derivata din dispersia rezultatului.
+
+        Justificare empirica (O-004, n=6 pe DVRA):
+            1 fisier  -> corect 2/2
+            2 fisiere -> partial corect 1/1
+            4+        -> gresit 3/3
+        Confirmat indirect in faza B: cand nu are ce gasi, modelul
+        returneaza liste lungi (pana la 9 fisiere).
+        """
+        if self.status != "ok" or not self.files:
+            return "none"
+        n = len(self.files)
+        if n == 1:
+            return "high"
+        if n <= 3:
+            return "medium"
+        return "low"
+
+    @property
+    def is_actionable(self) -> bool:
+        """Rezultatul merita trimis unui analist?"""
+        return self.confidence in ("high", "medium")'''
+
+assert old in s
+open(p, 'w').write(s.replace(old, new))
+print("ok")
+PYEOF
+
+  507  python3 - <<'PYEOF'
+p = 'correlate.py'
+s = open(p).read()
+
+old = '''    # Scanare reusita, fara suprafata: probabil scan automat.
+    if c.scan_status == "empty" or not c.has_surface:'''
+new = '''    # Localizare dispersata: modelul nu a gasit tiparul, a returnat
+    # fisiere plauzibile tematic. Masurat: 4+ fisiere -> gresit 3/3 (O-004).
+    # Tratat ca lipsa de informatie, NU ca dovada de absenta.
+    if c.file_count >= 4:
+        c.priority = "medium"
+        r.append(f"localizare dispersata ({c.file_count} fisiere), incredere scazuta")
+        r.append("rezultatul scanarii nu e folosit in decizie")
+        return c
+
+    # Scanare reusita, fara suprafata: probabil scan automat.
+    if c.scan_status == "empty" or not c.has_surface:'''
+
+assert old in s
+open(p, 'w').write(s.replace(old, new))
+print("ok")
+PYEOF
+
+  508  python3 correlate.py fixtures/synthetic_alerts.json --repo ~/soc-lab/target/app
+  509  cd ~/soc-lab/harness
+  510  grep -n "def confidence\|def is_actionable\|DEPRECAT" code_scanner.py
+  511  python3 -c "
+from code_scanner import ScanResult
+for n in (0,1,2,4,9):
+    r = ScanResult(repo_path='x', repo_commit='y', cwe_id='CWE-78',
+                   files=[f'f{i}.py' for i in range(n)], status='ok' if n else 'empty')
+    print(f'{n} fisiere -> {r.confidence:8} actionable={r.is_actionable}')
+"
+  512  cd ~/soc-lab
+  513  git add -A
+  514  git commit -m "filtrare externa: confidence pe dispersie, has_surface deprecat (faza B TNR=0)"
+  515  git push
+  516  cd ~/soc-lab/groundtruth
+  517  cp runs.csv runs.csv.bak
+  518  cat > runs.csv <<'EOF'
+timestamp_utc,technique_id,test_number,host,label,expected_rules,notes
+2026-08-20T12:10:36+03:00,T1003.008,1,tiberiu-VirtualBox,TP,Potential Shadow File Read via Command Line Utilities,access /etc/shadow
+2026-08-20T12:10:44+03:00,T1053.003,1,tiberiu-VirtualBox,TP,Cron Job Created or Modified,cron replace crontab
+2026-08-20T12:12:09+03:00,T1059.004,1,tiberiu-VirtualBox,TP,,bash script + ping (nicio regula asteptata)
+2026-08-20T12:14:00+03:00,T1070.003,1,tiberiu-VirtualBox,TP,Tampering of Shell Command-Line History,clear bash history
+2026-08-20T12:15:00+03:00,T1548.001,1,tiberiu-VirtualBox,TP,SUID/SGID Bit Set|File Permission Modification in Writable Directory,setuid binary
+2026-08-20T12:17:32+03:00,T1543.002,1,tiberiu-VirtualBox,TP,,systemd service (de confirmat)
+2026-08-20T12:27:11+03:00,T1136.001,1,tiberiu-VirtualBox,TP,Linux User Account Creation,useradd evil_user
+2026-08-20T12:33:17+03:00,NOISE,,tiberiu-VirtualBox,FP,,noise script start
+2026-08-20T13:52:00+03:00,NOISE,,tiberiu-VirtualBox,FP,,noise script stop
+EOF
+
+  519  cd ~/soc-lab/harness
+  520  python3 - <<'PYEOF'
+p = 'evaluate.py'
+s = open(p).read()
+
+# 1. fereastra retine regulile asteptate
+s = s.replace(
+    '    technique_id: str\n    note: str = ""',
+    '    technique_id: str\n    expected_rules: frozenset[str] = frozenset()\n    note: str = ""'
+)
+
+# 2. la citire
+s = s.replace(
+    '''            windows.append(
+                GroundTruthWindow(
+                    ts,
+                    ts + timedelta(seconds=window_seconds),
+                    label,  # type: ignore[arg-type]
+                    technique,
+                    row.get("notes", ""),
+                )
+            )''',
+    '''            raw_rules = (row.get("expected_rules") or "").strip()
+            rules = frozenset(x.strip() for x in raw_rules.split("|") if x.strip())
+            windows.append(
+                GroundTruthWindow(
+                    ts,
+                    ts + timedelta(seconds=window_seconds),
+                    label,  # type: ignore[arg-type]
+                    technique,
+                    rules,
+                    row.get("notes", ""),
+                )
+            )'''
+)
+s = s.replace(
+    '''                windows.append(
+                    GroundTruthWindow(noise_start, ts, "FP", technique, row.get("notes", ""))
+                )''',
+    '''                windows.append(
+                    GroundTruthWindow(noise_start, ts, "FP", technique,
+                                      frozenset(), row.get("notes", ""))
+                )'''
+)
+
+# 3. etichetarea cere si potrivirea pe regula
+old = '''        matches = [w for w in windows if w.contains(ts)]
+        if not matches:
+            continue
+        label: Label = "TP" if any(w.label == "TP" for w in matches) else "FP"
+        labelled.append((alert, label))'''
+new = '''        matches = [w for w in windows if w.contains(ts)]
+        if not matches:
+            continue
+
+        # TP cere fereastra SI regula asteptata. O alerta de discovery care
+        # cade langa un test Atomic nu e adevarat-pozitiva pentru acel test.
+        # Fara aceasta conditie, 7 tehnici produceau 65 "TP".
+        is_tp = any(
+            w.label == "TP" and w.expected_rules and alert.rule_name in w.expected_rules
+            for w in matches
+        )
+        label: Label = "TP" if is_tp else "FP"
+        labelled.append((alert, label))'''
+assert old in s
+s = s.replace(old, new)
+
+open(p, 'w').write(s)
+print("ok")
+PYEOF
+
+  521  python3 evaluate.py --alerts ~/soc-lab/groundtruth/alerts_raw.json                     --truth ~/soc-lab/groundtruth/runs.csv --ablation --window 300
+  522  cat > ~/soc-lab/results/2026-08-26-prefilter-ablation.md <<'EOF'
+# Ablatie pre-filtru, cu etichetare corectata (n=115, 10 TP / 105 FP)
+
+Corectura de metoda: TP cere potrivire pe fereastra SI pe regula asteptata.
+Anterior, doar fereastra -> 7 tehnici produceau 65 "TP" (alertele de
+discovery de la activitatea normala cadeau in fereastra testelor).
+
+triager          auto-close  zgomot taiat  FN rate
+none                     0%           0%      0.0%
+building_block          55%          60%      0.0%   <- singurul valid
+dedup                   52%          55%     20.0%
+prefilter               60%          64%     20.0%
+all                    100%         100%    100.0%
+
+CONSTATARE PRINCIPALA: excluderea alertelor building_block taie 60% din
+zgomot fara nicio pierdere de TP. E o verificare de camp, nu o euristica.
+
+IPOTEZA INFIRMATA: dedup-ul pe fingerprint (rule_id, host, user, process)
+parea cel mai puternic filtru (65% reducere pe setul brut, O-001). Cu
+etichetare corecta, rateaza 2 din 10 atacuri.
+Cauza: zgomotul benign si atacul produc acelasi fingerprint. Un `useradd`
+de la scriptul de deploy si unul de la Atomic Red Team sunt identice pe
+cele patru campuri. Primul escaladeaza, al doilea se inchide ca duplicat.
+
+CONSECINTA: `prefilter` (building_block + dedup) e MAI PROST decat
+building_block singur. Combinarea filtrelor nu e aditiva.
+Dedup-ul are nevoie de un camp discriminant in plus (linie de comanda,
+proces parinte) - exact contextul care lipseste la 27% din alerte (O-002).
+
+LIMITARI: n=115 dintr-un laborator cu un singur endpoint, 10 TP.
+Nu se extrapoleaza la productie.
+EOF
+
+  523  cd ~/soc-lab && git add -A && git commit -m "ablatie pre-filtru cu etichetare corecta: dedup rateaza 20% din TP" && git push
+  524  cd ~/soc-lab/harness
+  525  python3 - <<'PYEOF'
+p = 'normalize.py'
+s = open(p).read()
+old = '''    @property
+    def fingerprint(self) -> str:
+        """Cheie de deduplicare folosita de pre-filtru (stratul L3)."""
+        return "|".join(
+            str(x)
+            for x in (
+                self.rule_id,
+                self.host_id,
+                self.user_name,
+                self.process_name,
+            )
+        )'''
+new = '''    @property
+    def fingerprint(self) -> str:
+        """
+        Cheie de deduplicare folosita de pre-filtru (stratul L3).
+
+        Include linia de comanda pentru ca fara ea dedup-ul nu discrimineaza:
+        masurat 2026-08-26, un `useradd` de la scriptul de deploy si unul de
+        la Atomic Red Team sunt identice pe (rule_id, host, user, process),
+        deci al doilea se inchide ca duplicat al primului. FN rate 20%.
+
+        Limitare: `command_line` lipseste la 27% din alerte (O-002), cele
+        din system.auth si system.syslog. Pentru acelea, fingerprint-ul
+        ramane la fel de slab ca inainte -> vezi `fingerprint_is_weak`.
+        """
+        return "|".join(
+            str(x)
+            for x in (
+                self.rule_id,
+                self.host_id,
+                self.user_name,
+                self.process_name,
+                self.process_command_line,
+            )
+        )
+
+    @property
+    def fingerprint_is_weak(self) -> bool:
+        """Fingerprint fara camp discriminant: dedup-ul nu e sigur aici."""
+        return self.process_command_line is None'''
+assert old in s
+open(p, 'w').write(s.replace(old, new))
+print("ok")
+PYEOF
+
+  526  python3 - <<'PYEOF'
+p = 'evaluate.py'
+s = open(p).read()
+old = '''@triager("dedup")
+def triage_dedup(alerts: list[NormalizedAlert]) -> list[Verdict]:
+    """Primul dintr-un fingerprint escaladeaza; repetitiile se inchid."""
+    seen: set[str] = set()
+    out: list[Verdict] = []
+    for a in alerts:
+        if a.fingerprint in seen:
+            out.append("auto_close")
+        else:
+            seen.add(a.fingerprint)
+            out.append("escalate")
+    return out'''
+new = '''@triager("dedup")
+def triage_dedup(alerts: list[NormalizedAlert]) -> list[Verdict]:
+    """Primul dintr-un fingerprint escaladeaza; repetitiile se inchid."""
+    seen: set[str] = set()
+    out: list[Verdict] = []
+    for a in alerts:
+        if a.fingerprint in seen:
+            out.append("auto_close")
+        else:
+            seen.add(a.fingerprint)
+            out.append("escalate")
+    return out
+
+
+@triager("dedup_safe")
+def triage_dedup_safe(alerts: list[NormalizedAlert]) -> list[Verdict]:
+    """
+    Dedup care refuza sa inchida cand fingerprint-ul nu e discriminant.
+    Incertitudinea urca: fara linie de comanda nu poti sti daca doua
+    alerte identice pe restul campurilor sunt acelasi eveniment.
+    """
+    seen: set[str] = set()
+    out: list[Verdict] = []
+    for a in alerts:
+        if a.fingerprint_is_weak:
+            out.append("escalate")
+            continue
+        if a.fingerprint in seen:
+            out.append("auto_close")
+        else:
+            seen.add(a.fingerprint)
+            out.append("escalate")
+    return out'''
+assert old in s
+s = s.replace(old, new)
+
+s = s.replace(
+    'order = ["none", "building_block", "dedup", "prefilter", "all"]',
+    'order = ["none", "building_block", "dedup", "dedup_safe", "prefilter", "prefilter_safe", "all"]'
+)
+open(p, 'w').write(s)
+print("ok")
+PYEOF
+
+  527  python3 evaluate.py --alerts ~/soc-lab/groundtruth/alerts_raw.json                     --truth ~/soc-lab/groundtruth/runs.csv --ablation --window 300
+  528  cd ~/soc-lab/harness
+  529  python3 - <<'PYEOF'
+p = 'evaluate.py'
+s = open(p).read()
+anchor = '@triager("prefilter")'
+new = '''@triager("prefilter_safe")
+def triage_prefilter_safe(alerts: list[NormalizedAlert]) -> list[Verdict]:
+    """
+    Pre-filtrul corectat: building_block + dedup prudent.
+    Ambele componente au FN rate 0 masurat separat.
+    """
+    seen: set[str] = set()
+    out: list[Verdict] = []
+    for a in alerts:
+        if a.is_building_block:
+            out.append("auto_close")
+            continue
+        if a.fingerprint_is_weak:
+            out.append("escalate")
+            continue
+        if a.fingerprint in seen:
+            out.append("auto_close")
+            continue
+        seen.add(a.fingerprint)
+        out.append("escalate")
+    return out
+
+
+'''
+assert anchor in s
+open(p, 'w').write(s.replace(anchor, new + anchor))
+print("ok")
+PYEOF
+
+  530  python3 evaluate.py --alerts ~/soc-lab/groundtruth/alerts_raw.json                     --truth ~/soc-lab/groundtruth/runs.csv --ablation --window 300
+  531  cat > ~/soc-lab/results/2026-08-26-prefilter-final.md <<'EOF'
+# Baseline determinist al pre-filtrului (n=115, 10 TP / 105 FP)
+
+triager           auto-close  zgomot taiat  FN rate
+none                      0%           0%     0.0%
+building_block           55%          60%     0.0%
+dedup                    49%          52%    10.0%
+dedup_safe               46%          50%     0.0%
+prefilter                59%          64%    10.0%
+prefilter_safe           57%          62%     0.0%   <- BASELINE
+all                     100%         100%   100.0%
+
+BASELINE: prefilter_safe = building_block + dedup prudent.
+62% din zgomot eliminat, zero atacuri ratate. Zero LLM.
+
+Orice contributie a modelului se masoara PESTE aceasta cifra.
+
+DOUA CORECTURI CARE AU PRODUS-O:
+1. fingerprint include process.command_line
+   Fara el, un `useradd` de deploy si unul de atac sunt identice.
+   FN rate 20% -> 10%.
+2. dedup refuza sa inchida cand command_line lipseste (27% din alerte, O-002)
+   FN rate 10% -> 0%. Cost: 2 puncte de reducere de zgomot.
+
+PRINCIPIU CONFIRMAT EMPIRIC: combinarea filtrelor e aditiva doar daca
+fiecare componenta are FN 0. prefilter (64%, FN 10%) parea mai bun decat
+prefilter_safe (62%, FN 0%) - cele 2 puncte in plus costau un atac din zece.
+
+LIMITARI: n=115, un singur endpoint, 10 TP. Pragul de <2% FN nu poate fi
+verificat semnificativ cu 10 pozitive - un singur TP ratat inseamna 10%.
+Necesita validare pe date de productie.
+EOF
+
+  532  cd ~/soc-lab && git add -A && git commit -m "baseline pre-filtru: 62% zgomot taiat, FN 0" && git push
+  533  history > ~/soc-lab/history-2026-08.txt
