@@ -1,0 +1,16 @@
+timestamp_utc,technique_id,test_number,host,label,expected_rules,notes
+2026-08-28T12:00:00+03:00,T1068,1,github-node-01,TP,Potential CVE-2021-4034 Exploitation Attempt,Detects exploitation attempt of the vulnerability described in CVE-2021-4034.
+2026-08-28T12:00:00+03:00,T1059,1,github-node-01,TP,Privilege Escalation Preparation,Detects suspicious shell commands indicating the information gathering phase as preparation for the Privilege Escalation.
+2026-08-28T12:00:00+03:00,T1110,1,github-node-01,TP,Failed Logins with Different Accounts from Single Source - Linux,Detects suspicious failed logins with different user accounts from a single source system
+2026-08-28T12:00:00+03:00,T1006,1,github-node-01,TP,Use of Debugfs to Access a Raw Disk,Detects access to a raw disk on a host to evade detection by security products.
+2026-08-28T12:00:00+03:00,T1068,1,github-node-01,TP,CVE-2021-3156 Exploitation Attempt,|
+2026-08-28T12:00:00+03:00,T1203,1,github-node-01,TP,OMIGOD SCX RunAsProvider ExecuteScript,"Rule to detect the use of the SCX RunAsProvider ExecuteScript to execute any UNIX/Linux script using the /bin/sh shell. Script being executed gets created as a temp file in /tmp folder with a scx* prefix. Then it is invoked from the following directory /etc/opt/microsoft/scx/conf/tmpdir/. The file in that directory has the same prefix scx*. SCXcore, started as the Microsoft Operations Manager UNIX/Linux Agent, is now used in a host of products including Microsoft Operations Manager. Microsoft Azure, and Microsoft Operations Management Suite."
+2026-08-28T12:00:00+03:00,T1068,1,github-node-01,TP,CVE-2021-3156 Exploitation Attempt Bruteforcing,|
+2026-08-28T12:00:00+03:00,T1059,1,github-node-01,TP,Python Path Configuration File Creation - Linux,|
+2026-08-28T12:00:00+03:00,T1027,1,github-node-01,TP,Potentially Suspicious Long Filename Pattern - Linux,|
+2026-08-28T12:00:00+03:00,T1057,1,github-node-01,TP,Process Discovery,|
+2026-08-28T12:00:00+03:00,T1685,1,github-node-01,TP,Terminate Linux Process Via Kill,"Detects usage of command line tools such as ""kill"", ""pkill"" or ""killall"" to terminate or signal a running process."
+2026-08-28T12:00:00+03:00,T1202,1,github-node-01,TP,WSL Kali-Linux Usage,Detects the use of Kali Linux through Windows Subsystem for Linux
+2026-08-28T12:00:00+03:00,T1059,1,github-node-01,TP,Installation of WSL Kali-Linux,|
+2026-08-28T12:00:00+03:00,T1496,1,github-node-01,TP,Linux Crypto Mining Pool Connections,Detects process connections to a Monero crypto mining pool
+2026-08-28T12:00:00+03:00,T1102,1,github-node-01,TP,Communication To Ngrok Tunneling Service - Linux,"Detects an executable accessing an ngrok tunneling endpoint, which could be a sign of forbidden exfiltration of data exfiltration by malicious actors"

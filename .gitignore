@@ -1,10 +1,4 @@
-elastic-agent-*/
-*.json
-*.log
-*.pid
-benign/noise.log
-target/
-test-repos/
-*.tar.gz
+.venv/
+*.gguf
 __pycache__/
-*.pyc
+results/*.md
