@@ -33,6 +33,7 @@ from pathlib import Path
 from ablation import label_alerts, load_ground_truth
 from decide import Verdict, all_rule_ids, decide
 from extract import Extractor
+from extract_det import DeterministicExtractor
 from features import FEATURE_FIELDS
 from normalize import load_alerts
 
@@ -71,6 +72,9 @@ def main() -> int:
     parser.add_argument("--truth", type=Path, required=True)
     parser.add_argument("--limit", type=int, default=0, help="0 = toate")
     parser.add_argument("--phrasing", default="a", choices=("a", "b"))
+    parser.add_argument("--extractor", default="model",
+                        choices=("model", "deterministic"),
+                        help="sursa trasaturilor: modelul, sau regex (brat de control)")
     parser.add_argument("--gate", action="store_true",
                         help="poarta de dezacord (dubleaza timpul de rulare)")
     parser.add_argument("--gate-on", nargs="*", default=list(FEATURE_FIELDS))
@@ -93,7 +97,9 @@ def main() -> int:
 
     label_dist = Counter(label for _, label in labelled)
     enabled = [r for r in all_rule_ids() if r not in set(args.disable_rules)]
-    extractor = Extractor()
+    extractor = (
+        Extractor() if args.extractor == "model" else DeterministicExtractor()
+    )
 
     outcomes = Counter()
     verdicts = Counter()
@@ -168,6 +174,7 @@ def main() -> int:
     add(f"- alerte: {args.alerts} ({len(alerts)} brute, {len(labelled)} etichetate)")
     add(f"- ground truth: {args.truth}")
     add(f"- distributie etichete: TP={label_dist['TP']}  FP={label_dist['FP']}")
+    add(f"- sursa trasaturilor: {args.extractor}")
     add(f"- model: {extractor.model_path}")
     add(f"- cuantizare: {extractor.quantization}")
     add(f"- temperature: {extractor.temperature}   n_ctx: {extractor.n_ctx}")
@@ -246,7 +253,8 @@ def main() -> int:
 
     args.results_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y-%m-%d-%H%M")
-    out = args.results_dir / f"{stamp}-extract-then-decide-{args.alerts.stem}.md"
+    out = (args.results_dir /
+           f"{stamp}-extract-then-decide-{args.extractor}-{args.alerts.stem}.md")
     out.write_text(report)
     print(f"[i] Raport salvat: {out}")
     return 0

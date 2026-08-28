@@ -29,7 +29,7 @@ from features import FEATURE_FIELDS, AlertFeatures, flat_json_schema
 from normalize import NormalizedAlert
 
 #: Configuratia modelului. Singurul loc de schimbat la trecerea pe Q8_0.
-MODEL_PATH = "/home/besleaga/antares-1b-Q5_K_M.gguf"
+MODEL_PATH = "/home/tiberiu/antares-1b-q8_0.gguf"
 N_CTX = 2048
 TEMPERATURE = 0.0
 MAX_TOKENS = 512

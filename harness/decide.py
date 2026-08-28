@@ -15,7 +15,13 @@ Doua defecte ale arborelui anterior, reparate aici:
   regula depinde de o combinatie distincta, si `fired_rule` iti spune care
   a decis efectiv -- daca o regula nu se aprinde niciodata, o vezi.
 - `risk_score` era primit si ignorat. Aici intra intr-o regula reala
-  (R5), care se poate dezactiva la ablatie ca sa masori cat aduce.
+  (R4), care se poate dezactiva la ablatie ca sa masori cat aduce.
+
+Setul de reguli a fost rescris pe 2026-08-28, dupa ce proba pe intrare goala
+a aratat ca `target_sensitivity` si `action_reversibility` nu conditioneaza pe
+intrare. Regulile care depindeau de ele au cazut sau au fost reformulate pe
+trasaturile ramase. Nu s-au ajustat praguri ca sa scada FPR -- cauza era in
+extragere, nu in arbore.
 
 Vocabularul de verdicte urmeaza subclasele CORTEX. Distinctia care conteaza
 pentru teza e FP_DATA vs FP_LOGIC: primul inseamna ca telemetria nu a livrat
@@ -30,14 +36,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Sequence
 
-from features import (
-    ActionReversibility,
-    AlertFeatures,
-    CommandShape,
-    NamingPattern,
-    ParentLineage,
-    TargetSensitivity,
-)
+from features import AlertFeatures, CommandShape, ParentLineage
 from normalize import NormalizedAlert
 
 
@@ -87,31 +86,26 @@ RULES: tuple[Rule, ...] = (
         ),
     ),
     Rule(
-        rule_id="R1-reverse-shell",
+        rule_id="R1-credential-access",
         verdict=Verdict.ACTIONABLE,
-        predicate=lambda f, a: f.command_shape is CommandShape.REVERSE_SHELL,
-        rationale="Conexiune interactiva iesita: nu are varianta benigna plauzibila.",
-    ),
-    Rule(
-        rule_id="R2-credential-access",
-        verdict=Verdict.ACTIONABLE,
-        predicate=lambda f, a: (
-            f.target_sensitivity is TargetSensitivity.CREDENTIAL_STORE
-            and f.action_reversibility is not ActionReversibility.NO_EVIDENCE
+        predicate=lambda f, a: f.command_shape is CommandShape.CREDENTIAL_ACCESS,
+        rationale=(
+            "Citire de material de autentificare. Inlocuieste regula veche R2, "
+            "care depindea de target_sensitivity -- camp scos din schema pe "
+            "2026-08-28 pentru ca nu conditiona pe intrare."
         ),
-        rationale="Atingerea depozitului de credentiale, cu dovada de actiune.",
     ),
     Rule(
-        rule_id="R3-log-tampering",
+        rule_id="R2-log-tampering",
         verdict=Verdict.ACTIONABLE,
-        predicate=lambda f, a: (
-            f.command_shape is CommandShape.LOG_MANIPULATION
-            and f.action_reversibility is ActionReversibility.MODIFIES_SYSTEM_STATE
+        predicate=lambda f, a: f.command_shape is CommandShape.LOG_MANIPULATION,
+        rationale=(
+            "Modificarea urmelor de audit sau istoric. Conditia pe "
+            "action_reversibility a cazut odata cu campul."
         ),
-        rationale="Modificarea urmelor de audit sau istoric.",
     ),
     Rule(
-        rule_id="R4-manual-persistence",
+        rule_id="R3-manual-persistence",
         verdict=Verdict.ACTIONABLE,
         predicate=lambda f, a: (
             f.command_shape is CommandShape.PERSISTENCE_MECHANISM
@@ -120,25 +114,25 @@ RULES: tuple[Rule, ...] = (
         rationale=(
             "Persistenta instalata dintr-o sesiune interactiva. Aceeasi actiune "
             "pornita de un scheduler e operare normala -- descendenta e trasatura "
-            "care le separa."
+            "care le separa, si e una dintre cele trei care au trecut proba pe "
+            "intrare goala."
         ),
     ),
     Rule(
-        rule_id="R5-risk-threshold",
+        rule_id="R4-risk-threshold",
         verdict=Verdict.ACTIONABLE,
         predicate=lambda f, a: (
             a.risk_score >= 73
-            and f.action_reversibility is ActionReversibility.MODIFIES_SYSTEM_STATE
             and f.parent_lineage is not ParentLineage.SCHEDULER_OR_SERVICE
         ),
         rationale=(
-            "Prag determinist pe scorul de risc al regulii, conditionat de "
-            "modificare de stare. Pragul 73 = 'high' in Elastic; e o alegere, "
-            "nu o masuratoare, si de aceea regula e ablatabila."
+            "Prag determinist pe scorul de risc al regulii Elastic (73 = 'high' "
+            "in maparea de severitate), cu exceptie pentru ce porneste automat. "
+            "Pragul e o alegere, nu o masuratoare, de aceea regula e ablatabila."
         ),
     ),
     Rule(
-        rule_id="R6-automated-package-management",
+        rule_id="R5-automated-package-management",
         verdict=Verdict.BENIGN_POSITIVE,
         predicate=lambda f, a: (
             f.command_shape is CommandShape.PACKAGE_MANAGEMENT
@@ -146,18 +140,6 @@ RULES: tuple[Rule, ...] = (
             in (ParentLineage.SCHEDULER_OR_SERVICE, ParentLineage.PACKAGE_MANAGER)
         ),
         rationale="Intretinere de pachete pornita automat: comportament asteptat.",
-    ),
-    Rule(
-        rule_id="R7-read-only-no-target",
-        verdict=Verdict.FP_LOGIC,
-        predicate=lambda f, a: (
-            f.action_reversibility is ActionReversibility.READS_ONLY
-            and f.target_sensitivity is TargetSensitivity.NO_SPECIFIC_TARGET
-        ),
-        rationale=(
-            "Citire fara tinta identificabila: regula s-a aprins fara sa existe "
-            "ceva de protejat. Fals pozitiv de logica de regula."
-        ),
     ),
 )
 

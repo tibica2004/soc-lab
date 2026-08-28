@@ -19,12 +19,10 @@ import re
 
 from features import (
     FEATURE_FIELDS,
-    ActionReversibility,
     AlertFeatures,
     CommandShape,
     NamingPattern,
     ParentLineage,
-    TargetSensitivity,
     flat_json_schema,
 )
 from decide import RULES, Verdict, all_rule_ids, decide
@@ -67,8 +65,6 @@ def _features(**overrides) -> AlertFeatures:
         command_shape=CommandShape.ROUTINE_ADMIN,
         parent_lineage=ParentLineage.SCHEDULER_OR_SERVICE,
         naming_pattern=NamingPattern.CONVENTIONAL_SYSTEM,
-        target_sensitivity=TargetSensitivity.NO_SPECIFIC_TARGET,
-        action_reversibility=ActionReversibility.READS_ONLY,
         evidence_span="",
     )
     base.update(overrides)
@@ -154,11 +150,19 @@ def test_missing_command_line_is_fp_data() -> None:
     assert decision.verdict is Verdict.FP_DATA
 
 
-def test_reverse_shell_escalates() -> None:
+def test_credential_access_escalates() -> None:
     decision = decide(
-        _features(command_shape=CommandShape.REVERSE_SHELL), _alert()
+        _features(command_shape=CommandShape.CREDENTIAL_ACCESS), _alert(risk_score=21)
     )
     assert decision.verdict is Verdict.ACTIONABLE
+
+
+def test_schema_has_no_network_value() -> None:
+    """
+    reverse_shell a fost scoasa pe 2026-08-28: producea 5 din 6 fals-pozitive
+    pe alerte fara nicio componenta de retea. Testul apara decizia.
+    """
+    assert "reverse_shell" not in {m.value for m in CommandShape}
 
 
 def test_persistence_depends_on_lineage() -> None:
@@ -193,35 +197,25 @@ def test_every_rule_is_reachable() -> None:
     cases = {
         "R0-no-telemetry": (
             _features(command_shape=CommandShape.NO_COMMAND_LINE), _alert()),
-        "R1-reverse-shell": (
-            _features(command_shape=CommandShape.REVERSE_SHELL), _alert()),
-        "R2-credential-access": (
-            _features(
-                target_sensitivity=TargetSensitivity.CREDENTIAL_STORE,
-                action_reversibility=ActionReversibility.READS_ONLY,
-            ), _alert()),
-        "R3-log-tampering": (
-            _features(
-                command_shape=CommandShape.LOG_MANIPULATION,
-                action_reversibility=ActionReversibility.MODIFIES_SYSTEM_STATE,
-            ), _alert()),
-        "R4-manual-persistence": (
+        "R1-credential-access": (
+            _features(command_shape=CommandShape.CREDENTIAL_ACCESS),
+            _alert(risk_score=21)),
+        "R2-log-tampering": (
+            _features(command_shape=CommandShape.LOG_MANIPULATION),
+            _alert(risk_score=21)),
+        "R3-manual-persistence": (
             _features(
                 command_shape=CommandShape.PERSISTENCE_MECHANISM,
                 parent_lineage=ParentLineage.INTERACTIVE_SHELL,
             ), _alert(risk_score=21)),
-        "R5-risk-threshold": (
-            _features(
-                action_reversibility=ActionReversibility.MODIFIES_SYSTEM_STATE,
-                parent_lineage=ParentLineage.INTERACTIVE_SHELL,
-            ), _alert(risk_score=99)),
-        "R6-automated-package-management": (
+        "R4-risk-threshold": (
+            _features(parent_lineage=ParentLineage.INTERACTIVE_SHELL),
+            _alert(risk_score=99)),
+        "R5-automated-package-management": (
             _features(
                 command_shape=CommandShape.PACKAGE_MANAGEMENT,
                 parent_lineage=ParentLineage.PACKAGE_MANAGER,
             ), _alert(risk_score=21)),
-        "R7-read-only-no-target": (
-            _features(), _alert(risk_score=21)),
     }
     assert set(cases) == set(all_rule_ids()), "test nesincronizat cu RULES"
     for rule_id, (features, alert) in cases.items():
@@ -237,7 +231,7 @@ def test_disagreement_gate_blocks_autoclose_only() -> None:
     assert closed.verdict is Verdict.UNDETERMINED
 
     escalated = decide(
-        _features(command_shape=CommandShape.REVERSE_SHELL), _alert(),
+        _features(command_shape=CommandShape.CREDENTIAL_ACCESS), _alert(risk_score=21),
         agreement=disagree, require_agreement_on=FEATURE_FIELDS,
     )
     assert escalated.verdict is Verdict.ACTIONABLE
@@ -245,13 +239,10 @@ def test_disagreement_gate_blocks_autoclose_only() -> None:
 
 def test_rule_ablation_changes_outcome() -> None:
     """Regulile sunt date: dezactivarea uneia se vede in verdict."""
-    features = _features(
-        action_reversibility=ActionReversibility.MODIFIES_SYSTEM_STATE,
-        parent_lineage=ParentLineage.INTERACTIVE_SHELL,
-    )
+    features = _features(parent_lineage=ParentLineage.INTERACTIVE_SHELL)
     alert = _alert(risk_score=99)
     assert decide(features, alert).verdict is Verdict.ACTIONABLE
-    without = [r for r in all_rule_ids() if r != "R5-risk-threshold"]
+    without = [r for r in all_rule_ids() if r != "R4-risk-threshold"]
     assert decide(features, alert, enabled_rules=without).verdict is not Verdict.ACTIONABLE
 
 

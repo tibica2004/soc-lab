@@ -17,6 +17,22 @@ contina un sir care apare doar intr-o clasa. Descrierea care spunea
 "if it explicitly says 'NOISE', choose benign_noise" nu cerea extragere,
 cerea copierea cheii de raspuns. Vezi test_no_leak.py.
 
+Schema a fost REDUSA pe 2026-08-28, pe baza probei pe intrare goala
+(results/2026-08-28-probe-blank.txt). Criteriul de admitere: un camp ramane
+in schema doar daca distributia lui se schimba cand corpul alertei e golit.
+
+Eliminate:
+  - target_sensitivity: distributie identica cu date si fara (9/1 in ambele
+    cazuri). Nu conditioneaza pe intrare.
+  - action_reversibility: colapseaza la reads_only pe intrare goala si era
+    deja 7/10 pe intrare reala.
+  - CommandShape.REVERSE_SHELL: sursa a 5 din 6 fals-pozitive. Niciuna dintre
+    regulile Elastic active in laborator nu poate produce o alerta de retea,
+    iar valoarea aparea doar cand exista intrare -- deci fabricare declansata
+    de continut, nu prior. Consecinta: schema nu poate exprima un reverse
+    shell real. E o limitare acceptata pentru acest set de reguli, nu o
+    afirmatie ca astfel de atacuri nu exista.
+
 Fiecare enum are o valoare pentru absenta dovezii. "Nu stiu" si "nimic
 suspect" sunt lucruri diferite si trebuie sa fie separabile in aval:
 `command_line` lipseste la 27% din alerte (O-002), iar acele cazuri sunt
@@ -34,7 +50,6 @@ from pydantic import BaseModel, Field
 class CommandShape(str, Enum):
     """Forma comenzii executate, dedusa din linia de comanda."""
 
-    REVERSE_SHELL = "reverse_shell"
     CREDENTIAL_ACCESS = "credential_access"
     PERSISTENCE_MECHANISM = "persistence_mechanism"
     LOG_MANIPULATION = "log_manipulation"
@@ -67,24 +82,6 @@ class NamingPattern(str, Enum):
     NO_IDENTIFIERS = "no_identifiers"
 
 
-class TargetSensitivity(str, Enum):
-    """Ce resursa atinge actiunea."""
-
-    CREDENTIAL_STORE = "credential_store"
-    SCHEDULING_OR_SERVICE_CONFIG = "scheduling_or_service_config"
-    AUDIT_OR_HISTORY = "audit_or_history"
-    APPLICATION_DATA = "application_data"
-    NO_SPECIFIC_TARGET = "no_specific_target"
-
-
-class ActionReversibility(str, Enum):
-    """Daca actiunea modifica starea sistemului sau doar o citeste."""
-
-    MODIFIES_SYSTEM_STATE = "modifies_system_state"
-    READS_ONLY = "reads_only"
-    NO_EVIDENCE = "no_evidence"
-
-
 class AlertFeatures(BaseModel):
     """
     Faptele extrase dintr-o alerta. NU contine verdict.
@@ -96,7 +93,6 @@ class AlertFeatures(BaseModel):
     command_shape: CommandShape = Field(
         description=(
             "The shape of the executed command line. "
-            "reverse_shell: opens an outbound interactive connection. "
             "credential_access: reads or copies password, shadow, key or token material. "
             "persistence_mechanism: installs a scheduled job, service or startup entry. "
             "log_manipulation: clears, truncates or rewrites logs or shell history. "
@@ -124,24 +120,6 @@ class AlertFeatures(BaseModel):
             "no_identifiers: the command contains no identifiers."
         )
     )
-    target_sensitivity: TargetSensitivity = Field(
-        description=(
-            "Which resource the action touches. "
-            "credential_store: password, shadow, key or token storage. "
-            "scheduling_or_service_config: cron tables, unit files, init scripts. "
-            "audit_or_history: audit logs or shell history. "
-            "application_data: files owned by an application. "
-            "no_specific_target: no resource is identifiable."
-        )
-    )
-    action_reversibility: ActionReversibility = Field(
-        description=(
-            "Whether the action changes system state. "
-            "modifies_system_state: writes, deletes, creates or changes permissions. "
-            "reads_only: only reads or lists. "
-            "no_evidence: the alert does not say."
-        )
-    )
     evidence_span: str = Field(
         default="",
         description=(
@@ -157,8 +135,6 @@ FEATURE_FIELDS: tuple[str, ...] = (
     "command_shape",
     "parent_lineage",
     "naming_pattern",
-    "target_sensitivity",
-    "action_reversibility",
 )
 
 
