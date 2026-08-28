@@ -1,0 +1,147 @@
+{
+  "summary": {
+    "total_findings": 2,
+    "tool_call_count": 5,
+    "duration_seconds": 37.55428177899921,
+    "cwe_ids_triggered": [
+      "CWE-89"
+    ],
+    "failed_tool_calls": 0,
+    "retried_turns": 0,
+    "generation_errors": 0,
+    "failed_workers": 0,
+    "total_workers": 0,
+    "incomplete_reason": null
+  },
+  "findings": [
+    {
+      "title": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')",
+      "file_path": "django/db/models/query.py",
+      "cwe_ids": [
+        "CWE-89"
+      ],
+      "submission_rank": 1,
+      "likelihood_of_exploit": "High"
+    },
+    {
+      "title": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')",
+      "file_path": "django/db/backends/base/operations.py",
+      "cwe_ids": [
+        "CWE-89"
+      ],
+      "submission_rank": 2,
+      "likelihood_of_exploit": "High"
+    }
+  ],
+  "metadata": {
+    "schema_version": "1.0",
+    "request_id": "4ae13843b7f550e7",
+    "mode": "query",
+    "model": "antares-1b",
+    "backend": "remote",
+    "profile": "local-llama",
+    "cwe_ids": [
+      "CWE-89"
+    ],
+    "query": null,
+    "target": "django",
+    "terminal_call_budget": 4,
+    "allowed_sensitive_files": [],
+    "reproducibility": {
+      "request_hash": "4ae13843b7f550e718c38433262359c50e014e3fd125d3d2f30e7f37d79f5d33",
+      "deterministic_ordering": true,
+      "remote_provider_may_vary": true,
+      "safe_for_cache_reuse": false,
+      "cache_reuse_note": "Request identity excludes source contents and the deployed model revision."
+    },
+    "model_configuration": {
+      "settings": {
+        "model": "antares-1b",
+        "endpoint": "<configured>",
+        "ignore_paths": [],
+        "backend": "remote",
+        "context_window": 16384,
+        "remote_timeout_seconds": 300.0,
+        "api_key": null
+      },
+      "model_label": "local-llama",
+      "backend": {
+        "class": "RemoteInferenceBackend",
+        "backend_name": "remote",
+        "model_id": "antares-1b",
+        "context_window": 8192,
+        "endpoint": "<configured>",
+        "timeout_seconds": 600.0,
+        "retry_count": 6,
+        "retry_delay": 5.0,
+        "max_tokens": 4096,
+        "temperature": 0.3,
+        "top_p": 1.0,
+        "repetition_penalty": null
+      },
+      "model_adapter": "antares",
+      "model_spec": {
+        "name": "antares-1b",
+        "display_name": "Antares 1B",
+        "description": "Antares 1B model for file-level vulnerability localization",
+        "context_window": 16384,
+        "adapter": "antares",
+        "generation": {
+          "max_tokens": 4096,
+          "temperature": 0.3,
+          "top_p": 1.0,
+          "repetition_penalty": null,
+          "frequency_penalty": 0.3,
+          "stop_tokens": [
+            "<|end_of_text|>",
+            "<|start_of_role|>"
+          ],
+          "use_completions_api": true
+        },
+        "recommended_use_cases": [
+          "General code audit",
+          "CI pipelines",
+          "Deep scan"
+        ]
+      },
+      "selected_profile": {
+        "name": "local-llama",
+        "display_name": "Local llama.cpp",
+        "model_id": "antares-1b",
+        "backend": "remote",
+        "description": "Antares 1B model for file-level vulnerability localization",
+        "endpoint": "<configured>",
+        "api_key": null,
+        "context_window": 8192,
+        "recommended_use_cases": [
+          "General code audit",
+          "CI pipelines",
+          "Deep scan"
+        ],
+        "adapter": "antares",
+        "endpoint_spec": {
+          "url": "<configured>",
+          "url_env": null,
+          "api_key": null,
+          "api_key_env": "<redacted>",
+          "timeout_seconds": 600.0,
+          "retry_count": null,
+          "retry_delay": null
+        },
+        "generation": {
+          "max_tokens": 4096,
+          "temperature": 0.3,
+          "top_p": 1.0,
+          "repetition_penalty": null,
+          "frequency_penalty": 0.3,
+          "stop_tokens": [
+            "<|end_of_text|>",
+            "<|start_of_role|>"
+          ],
+          "use_completions_api": true
+        },
+        "aliases": []
+      }
+    }
+  }
+}

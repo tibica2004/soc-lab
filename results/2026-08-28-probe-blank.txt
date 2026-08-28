@@ -1,0 +1,12 @@
+=== REAL
+  command_shape: {'credential_access': 1, 'reverse_shell': 7, 'routine_admin': 2}
+  parent_lineage: {'interactive_shell': 1, 'unknown_parent': 5, 'scheduler_or_service': 2, 'package_manager': 2}
+  naming_pattern: {'conventional_system': 3, 'no_identifiers': 4, 'generic_or_test_like': 3}
+  target_sensitivity: {'scheduling_or_service_config': 9, 'no_specific_target': 1}
+  action_reversibility: {'reads_only': 7, 'modifies_system_state': 2, 'no_evidence': 1}
+=== GOL
+  command_shape: {'no_command_line': 1, 'persistence_mechanism': 9}
+  parent_lineage: {'unknown_parent': 10}
+  naming_pattern: {'generic_or_test_like': 10}
+  target_sensitivity: {'no_specific_target': 1, 'scheduling_or_service_config': 9}
+  action_reversibility: {'reads_only': 10}
