@@ -1,0 +1,34 @@
+request_id,timestamp_utc,method,route,payload_kind,label,cwe,vuln_level,expected_signature,expected_file,case_type,notes
+w-001,,GET,/admin/stats/disk,command_injection_parameters_urlencoded,ATTACK,CWE-78,level_5,,app/apis/admin/utils.py,P,predictie corelare reusita (F1 1.00). Payload URL-encodat in query - posibil sa nu declanseze reguli care cauta caractere neencodate
+w-002,,PUT,/users/update_role,privilege_escalation_role_grant,ATTACK,CWE-269,level_3,,app/apis/users/services/update_user_role_service.py,P,predictie corelare reusita (F1 1.00). Tinta in corp nu in cale
+w-003,,PUT,/menu,ssrf_image_url,ATTACK,CWE-918,level_4,,app/apis/menu/utils.py,P,predictie corelare partiala (F1 0.67). Payload in corp JSON
+w-004,,DELETE,/menu/1,missing_authorization,ATTACK,CWE-862,level_1,,app/apis/menu/services/delete_menu_item_service.py,P,predictie ESEC (F1 0.00 - absenta unei verificari O-004)
+w-005,,PUT,/profile,idor_other_user,ATTACK,CWE-639,level_2,,app/apis/auth/services/update_profile_service.py,P,predictie ESEC (F1 0.00 - O-004)
+w-006,,GET,/healthcheck,info_disclosure_response_header,ATTACK,CWE-200,level_0,,app/apis/healthcheck/service.py,P,predictie ESEC (O-004). Divulgarea e in antetul de RASPUNS X-Powered-By - cererea e normala deci e posibil sa nu produca nicio alerta. Caz legitim de nedetectat pentru M1
+w-010,,GET,/menu,sql_injection_tautology,ATTACK,CWE-89,,,,N2,ruta reala fara defect de SQLi
+w-011,,GET,/orders,path_traversal,ATTACK,CWE-22,,,,N2,test critic pentru O-013 - daca has_surface e mereu adevarat se vede aici
+w-012,,POST,/token,sql_injection_tautology,ATTACK,CWE-89,,,,N2,
+w-013,,GET,/orders/1,command_injection_semicolon,ATTACK,CWE-78,,,,N2,ruta fara apel de shell
+w-020,,GET,/wp-admin/setup-config.php,scanner_probe,ATTACK,,,,,N3,ruta inexistenta
+w-021,,GET,/.env,secrets_probe,ATTACK,,,,,N3,
+w-022,,GET,/static/../../etc/passwd,path_traversal,ATTACK,CWE-22,,,,N3,
+w-030,,GET,/menu,none,BENIGN,,,,,N1,navigare normala
+w-031,,GET,/menu,none,BENIGN,,,,,N1,
+w-032,,POST,/token,none,BENIGN,,,,,N1,autentificare valida
+w-033,,GET,/orders,none,BENIGN,,,,,N1,
+w-034,,POST,/orders,none,BENIGN,,,,,N1,comanda legitima
+w-035,,GET,/profile,none,BENIGN,,,,,N1,
+w-036,,PUT,/profile,none,BENIGN,,,,,N1,varianta legitima a lui w-005
+w-037,,GET,/healthcheck,none,BENIGN,,,,,N1,varianta benigna a lui w-006
+w-038,,GET,/menu,none,BENIGN,,,,,N1,
+w-039,,GET,/orders/1,none,BENIGN,,,,,N1,
+w-040,,GET,/referral-code,none,BENIGN,,,,,N1,
+w-041,,POST,/apply-referral,none,BENIGN,,,,,N1,
+w-042,,GET,/discount-coupons,none,BENIGN,,,,,N1,
+w-043,,GET,/orders/status/1,none,BENIGN,,,,,N1,
+w-044,,PUT,/menu/1,none,BENIGN,,,,,N1,actualizare legitima ca angajat
+w-045,,GET,/menu,none,BENIGN,,,,,N1,
+w-046,,GET,/orders,none,BENIGN,,,,,N1,
+w-047,,GET,/healthcheck,none,BENIGN,,,,,N1,
+w-048,,GET,/profile,none,BENIGN,,,,,N1,
+w-049,,POST,/orders,none,BENIGN,,,,,N1,
