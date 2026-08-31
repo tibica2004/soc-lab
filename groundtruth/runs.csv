@@ -1,10 +1,8 @@
 timestamp_utc,technique_id,test_number,host,label,expected_rules,notes
 2026-08-20T12:10:36+03:00,T1003.008,1,tiberiu-VirtualBox,TP,Potential Shadow File Read via Command Line Utilities,access /etc/shadow
 2026-08-20T12:10:44+03:00,T1053.003,1,tiberiu-VirtualBox,TP,Cron Job Created or Modified,cron replace crontab
-2026-08-20T12:12:09+03:00,T1059.004,1,tiberiu-VirtualBox,TP,,bash script + ping (nicio regula asteptata)
 2026-08-20T12:14:00+03:00,T1070.003,1,tiberiu-VirtualBox,TP,Tampering of Shell Command-Line History,clear bash history
 2026-08-20T12:15:00+03:00,T1548.001,1,tiberiu-VirtualBox,TP,SUID/SGID Bit Set|File Permission Modification in Writable Directory,setuid binary
-2026-08-20T12:17:32+03:00,T1543.002,1,tiberiu-VirtualBox,TP,,systemd service (de confirmat)
 2026-08-20T12:27:11+03:00,T1136.001,1,tiberiu-VirtualBox,TP,Linux User Account Creation,useradd evil_user
 2026-08-20T12:33:17+03:00,NOISE,,tiberiu-VirtualBox,FP,,noise script start
 2026-08-20T13:52:00+03:00,NOISE,,tiberiu-VirtualBox,FP,,noise script stop
