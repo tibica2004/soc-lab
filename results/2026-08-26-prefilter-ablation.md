@@ -1,3 +1,19 @@
+> **RETRAS 2026-08-28.** Cele 10 TP includeau alerte din ferestrele
+> `T1059.004` (12:12:09) si `T1543.002` (12:17:32), tehnici care nu au produs
+> detectii proprii. Alertele din ferestrele lor apartineau tehnicilor
+> precedente (shadow file 12:10:36, cron 12:10:44, SUID 12:15:00) sau erau
+> zgomot de discovery — 32 de "System Owner/User Discovery Linux" intr-o
+> singura fereastra. Cele doua randuri au fost scoase din `runs.csv`.
+>
+> Cu etichetare curata: **115 alerte, 5 TP / 110 FP, `prefilter_safe` taie
+> 59% din zgomot, FN 0/5.** Vezi `2026-08-28-prefilter-baseline.md`.
+>
+> Afectat si O-001: cu etichetare curata, `dedup` are FN 0%, nu 20%. Motivul
+> empiric pentru introducerea lui `dedup_safe` nu se mai sustine, desi
+> prudenta ramane justificata pe alte temeiuri (O-002).
+
+---
+
 # Ablatie pre-filtru, cu etichetare corectata (n=115, 10 TP / 105 FP)
 
 Corectura de metoda: TP cere potrivire pe fereastra SI pe regula asteptata.
