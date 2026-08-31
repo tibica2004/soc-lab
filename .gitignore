@@ -1,7 +1,6 @@
 .venv/
 *.gguf
 __pycache__/
-results/*.md
 .venv/
 __pycache__/
 target/
