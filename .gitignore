@@ -10,3 +10,4 @@ elastic-agent-*.tar.gz
 llama-server.log
 llama-server.pid
 benign/noise.log
+sample_repo/
