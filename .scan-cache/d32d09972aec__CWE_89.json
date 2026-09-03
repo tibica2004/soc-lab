@@ -1,0 +1,17 @@
+{
+  "repo_path": "../sample_repo",
+  "repo_commit": "d32d09972aec",
+  "cwe_id": "CWE-89",
+  "files": [
+    "app/apis/orders/services/get_order_status.py"
+  ],
+  "finding_count": 1,
+  "scanned_at": "2026-09-03T11:14:47.168909+00:00",
+  "duration_seconds": 102.7,
+  "tool_budget": 4,
+  "profile": "local-llama",
+  "tool_call_count": 5,
+  "failed_tool_calls": 0,
+  "status": "ok",
+  "error_message": null
+}
