@@ -33,7 +33,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from normalize import NormalizedAlert, load_alerts
-from evaluate import load_ground_truth, parse_ts
+from ablation import load_ground_truth, parse_ts
 from history import GroundTruthSource
 
 ENDPOINT = "http://127.0.0.1:8000/v1/completions"

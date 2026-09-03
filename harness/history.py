@@ -93,7 +93,7 @@ class HistorySource(Protocol):
 
 class GroundTruthSource:
     def __init__(self, truth_csv: Path, alerts_json: Path, window_seconds: int = 300):
-        from evaluate import load_ground_truth, parse_ts
+        from ablation import load_ground_truth, parse_ts
 
         self._parse_ts = parse_ts
         self.windows = load_ground_truth(truth_csv, window_seconds)

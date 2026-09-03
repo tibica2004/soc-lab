@@ -1,0 +1,34 @@
+  [exclus] Cron Job Created or Modified: FP si TP au descrieri identice
+  [exclus] SUID/SGID Bit Set: FP si TP au descrieri identice
+  [exclus] Tampering of Shell Command-Line History: FP si TP au descrieri identice
+115 alerte etichetate, 2 reguli cu si TP si FP
+
+--- File Permission Modification in Writable Directory
+    istoric: Rule history: insufficient data.
+    FP: Alert: rule 'File Permission Modification in Writable Directory'. Severity: low. Process: chmod +x /tmp/art.sh
+    TP: Alert: rule 'File Permission Modification in Writable Directory'. Severity: low. Process: chmod u+s /tmp/hello
+
+--- Linux User Account Creation
+    istoric: Rule history (last 30 days): 35 alerts from this rule, 33 reviewed by analysts, 32 closed as false positive (97%).
+    FP: Alert: rule 'Linux User Account Creation'. Severity: low. Process: useradd. User: svc_1787218451. Host: tiberi
+    TP: Alert: rule 'Linux User Account Creation'. Severity: low. Process: useradd. User: evil_user. Host: tiberiu-Vir
+
+=== File Permission Modification in Writable Directory
+  [fara] FP: 3/3  (FP,FP,FP)
+  [fara] TP: 0/3  (FP,FP,FP)
+  [cu  ] FP: 3/3  (FP,FP,FP)
+  [cu  ] TP: 0/3  (FP,FP,FP)
+
+=== Linux User Account Creation
+  [fara] FP: 3/3  (FP,FP,FP)
+  [fara] TP: 0/3  (FP,FP,FP)
+  [cu  ] FP: 3/3  (FP,FP,FP)
+  [cu  ] TP: 0/3  (FP,FP,FP)
+
+==============================================================
+fara  istoric: 6/12 verdicte corecte (50%)   discriminare 0/2
+cu    istoric: 6/12 verdicte corecte (50%)   discriminare 0/2
+
+Interpretare: daca 'cu' bate 'fara', contextul pre-adus imbunatateste
+triajul fara sa schimbe modelul. Cu putine perechi, diferenta poate fi
+zgomot -- verifica marimea esantionului inainte de a raporta o cifra.
