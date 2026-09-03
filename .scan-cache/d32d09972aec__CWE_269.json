@@ -1,0 +1,24 @@
+{
+  "repo_path": "../sample_repo",
+  "repo_commit": "d32d09972aec",
+  "cwe_id": "CWE-269",
+  "files": [
+    "app/db/models.py",
+    "app/apis/auth/utils/__init__.py",
+    "app/apis/orders/services/get_orders_service.py",
+    "app/apis/orders/services/create_order_service.py",
+    "app/main.py",
+    "app/init_app.py",
+    "app/tests/conftest.py",
+    "app/tests/modules/auth/test_auth_service.py"
+  ],
+  "finding_count": 8,
+  "scanned_at": "2026-09-03T08:05:29.689252+00:00",
+  "duration_seconds": 93.2,
+  "tool_budget": 4,
+  "profile": "local-llama",
+  "tool_call_count": 5,
+  "failed_tool_calls": 0,
+  "status": "ok",
+  "error_message": null
+}

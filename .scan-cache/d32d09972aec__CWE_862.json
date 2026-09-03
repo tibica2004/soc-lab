@@ -1,0 +1,20 @@
+{
+  "repo_path": "../sample_repo",
+  "repo_commit": "d32d09972aec",
+  "cwe_id": "CWE-862",
+  "files": [
+    "app/apis/auth/service.py",
+    "app/apis/users/services/update_user_role_service.py",
+    "app/apis/orders/services/get_order_service.py",
+    "app/apis/orders/services/get_orders_service.py"
+  ],
+  "finding_count": 4,
+  "scanned_at": "2026-09-03T08:08:06.045130+00:00",
+  "duration_seconds": 232.7,
+  "tool_budget": 4,
+  "profile": "local-llama",
+  "tool_call_count": 5,
+  "failed_tool_calls": 0,
+  "status": "ok",
+  "error_message": null
+}

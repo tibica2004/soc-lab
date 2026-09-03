@@ -1,0 +1,17 @@
+{
+  "repo_path": "../sample_repo",
+  "repo_commit": "d32d09972aec",
+  "cwe_id": "CWE-918",
+  "files": [
+    "app/apis/orders/utils.py"
+  ],
+  "finding_count": 1,
+  "scanned_at": "2026-09-03T08:07:03.095428+00:00",
+  "duration_seconds": 62.6,
+  "tool_budget": 4,
+  "profile": "local-llama",
+  "tool_call_count": 4,
+  "failed_tool_calls": 0,
+  "status": "ok",
+  "error_message": null
+}
