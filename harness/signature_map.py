@@ -53,6 +53,8 @@ SIGNATURE_CWE_RULES: list[tuple[str,str,str]]=[
     	("deserialization",         "CWE-502", "Unsafe Deserialization"),
     	("code injection",          "CWE-94",  "Code Injection"),
     	("ldap injection",          "CWE-90",  "LDAP Injection"),
+        ("/etc/passwd",             "CWE-22",  "Path Traversal"),
+        ("file inclusion",          "CWE-98",  "Remote File Inclusion"),
 ]
 # ---------------------------------------------------------------------------
 # Extragerea rutei aplicative

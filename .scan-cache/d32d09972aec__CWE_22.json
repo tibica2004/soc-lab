@@ -1,0 +1,17 @@
+{
+  "repo_path": "../sample_repo",
+  "repo_commit": "d32d09972aec",
+  "cwe_id": "CWE-22",
+  "files": [
+    "app/config.py"
+  ],
+  "finding_count": 1,
+  "scanned_at": "2026-09-03T06:30:25.434543+00:00",
+  "duration_seconds": 67.4,
+  "tool_budget": 4,
+  "profile": "local-llama",
+  "tool_call_count": 4,
+  "failed_tool_calls": 0,
+  "status": "ok",
+  "error_message": null
+}
