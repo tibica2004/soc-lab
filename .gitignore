@@ -11,3 +11,6 @@ llama-server.log
 llama-server.pid
 benign/noise.log
 sample_repo/
+
+# audit: iesirile rulate, regenerabile
+audit/runs/
