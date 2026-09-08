@@ -172,35 +172,6 @@ def suppressed(finding, baseline):
     return False
 
 
-
-def previous_keys(runs_root, current_out):
-    """Cheile (fisier, cwe) din rularea anterioara, pentru diff."""
-    if not runs_root or not os.path.isdir(runs_root):
-        return None
-    current = os.path.abspath(current_out)
-    candidates = []
-    for name in os.listdir(runs_root):
-        d = os.path.join(runs_root, name)
-        if os.path.abspath(d) == current or os.path.islink(d):
-            continue
-        f = os.path.join(d, "fused.json")
-        if os.path.isfile(f):
-            candidates.append((os.path.getmtime(f), f))
-    if not candidates:
-        return None
-    candidates.sort()
-    try:
-        with open(candidates[-1][1], "r", encoding="utf-8") as fh:
-            data = json.load(fh)
-    except (OSError, json.JSONDecodeError):
-        return None
-    keys = set()
-    for r in data.get("findings", []):
-        for cwe in r.get("cwes") or ["-"]:
-            keys.add((r.get("file", ""), cwe))
-    return keys
-
-
 def main():
     ap = argparse.ArgumentParser(description="Fuziune SARIF pentru triaj")
     ap.add_argument("--repo", required=True, help="radacina repo-ului tinta")
@@ -208,8 +179,6 @@ def main():
     ap.add_argument("--sarif", action="append", default=[], metavar="ETICHETA=CALE",
                     help="poate fi repetat, ex: --sarif semgrep=out/semgrep.sarif")
     ap.add_argument("--baseline", default="baseline.json")
-    ap.add_argument("--runs-root", default=None)
-    ap.add_argument("--only-new", action="store_true")
     args = ap.parse_args()
 
     repo_root = os.path.abspath(args.repo)
@@ -284,18 +253,6 @@ def main():
     # tier crescator; in interiorul tier-ului: severitate, apoi nr. de findings
     ranked.sort(key=lambda r: (r["tier"], not r["has_error_level"], -r["count"], r["file"]))
 
-    prev = previous_keys(args.runs_root, args.out)
-    for r in ranked:
-        if prev is None:
-            r["is_new"] = None
-        else:
-            keys = {(r["file"], c) for c in (r["cwes"] or ["-"])}
-            r["is_new"] = not (keys & prev)
-    if prev is not None:
-        print(f"   diff: {sum(1 for r in ranked if r['is_new'])} noi din {len(ranked)}")
-        if args.only_new:
-            ranked = [r for r in ranked if r["is_new"]]
-
     # --- 5. output -----------------------------------------------------------
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     payload = {
@@ -304,7 +261,6 @@ def main():
         "sources": sources,
         "baseline_entries": len(baseline),
         "total_files": len(ranked),
-        "new_files": sum(1 for r in ranked if r.get("is_new")),
         "total_findings": len(findings),
         "findings": ranked,
     }
@@ -345,9 +301,8 @@ def main():
             current_tier = r["tier"]
             lines_out += ["", f"## {r['tier_label']}", ""]
         loc = f" (linii {', '.join(map(str, r['lines'][:8]))})" if r["lines"] else ""
-        flag = " **NOU**" if r.get("is_new") else ""
         cwe = ", ".join(r["cwes"]) or "—"
-        lines_out.append(f"- **`{r['file']}`**{loc}{flag} — {cwe}  _[{', '.join(r['tools'])}]_")
+        lines_out.append(f"- **`{r['file']}`**{loc} — {cwe}  _[{', '.join(r['tools'])}]_")
         for it in r["items"][:3]:
             if it["message"]:
                 lines_out.append(f"    - {it['tool']}: {it['message'][:160]}")

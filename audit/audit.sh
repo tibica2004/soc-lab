@@ -56,7 +56,7 @@ if [ "${#SARIF_ARGS[@]}" -eq 0 ]; then
 fi
 
 python3 "$HERE/fuse.py" --repo "$TARGET" --out "$RUN" \
-  --baseline "$BASELINE" "${SARIF_ARGS[@]}"
+  --baseline "$BASELINE" --runs-root "$RUNS" "${SARIF_ARGS[@]}"
 
 ln -sfn "$RUN" "$RUNS/latest"
 echo
