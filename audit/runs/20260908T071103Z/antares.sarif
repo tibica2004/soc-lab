@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "antares",
+          "informationUri": "https://huggingface.co/collections/fdtn-ai/antares",
+          "rules": [
+            {
+              "id": "antares.cwe-78",
+              "name": "Antares localization for CWE-78",
+              "shortDescription": {
+                "text": "Fisier candidat pentru CWE-78, localizat de Antares"
+              },
+              "fullDescription": {
+                "text": "Modelul a returnat acest fisier ca posibil continand CWE-78. Localizare la nivel de fisier, fara linie. Nu e un verdict -- cere coroborare."
+              },
+              "properties": {
+                "tags": [
+                  "antares",
+                  "external/cwe/cwe-78"
+                ],
+                "cwe": [
+                  "CWE-78"
+                ],
+                "precision": "low"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              }
+            },
+            {
+              "id": "antares.cwe-269",
+              "name": "Antares localization for CWE-269",
+              "shortDescription": {
+                "text": "Fisier candidat pentru CWE-269, localizat de Antares"
+              },
+              "fullDescription": {
+                "text": "Modelul a returnat acest fisier ca posibil continand CWE-269. Localizare la nivel de fisier, fara linie. Nu e un verdict -- cere coroborare."
+              },
+              "properties": {
+                "tags": [
+                  "antares",
+                  "external/cwe/cwe-269"
+                ],
+                "cwe": [
+                  "CWE-269"
+                ],
+                "precision": "low"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              }
+            },
+            {
+              "id": "antares.cwe-918",
+              "name": "Antares localization for CWE-918",
+              "shortDescription": {
+                "text": "Fisier candidat pentru CWE-918, localizat de Antares"
+              },
+              "fullDescription": {
+                "text": "Modelul a returnat acest fisier ca posibil continand CWE-918. Localizare la nivel de fisier, fara linie. Nu e un verdict -- cere coroborare."
+              },
+              "properties": {
+                "tags": [
+                  "antares",
+                  "external/cwe/cwe-918"
+                ],
+                "cwe": [
+                  "CWE-918"
+                ],
+                "precision": "low"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "antares.cwe-78",
+          "level": "note",
+          "message": {
+            "text": "CWE-78: fisier candidat, localizat de Antares (1 fisiere returnate pentru acest CWE)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/home/tiberiu/soc-lab/sample_repo/app/apis/admin/utils.py"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": "CWE-78",
+            "files_returned": 1,
+            "tool_budget": 4,
+            "duration_seconds": 35.5
+          }
+        },
+        {
+          "ruleId": "antares.cwe-269",
+          "level": "note",
+          "message": {
+            "text": "CWE-269: fisier candidat, localizat de Antares (1 fisiere returnate pentru acest CWE)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/home/tiberiu/soc-lab/sample_repo/app/apis/users/services/update_user_role_service.py"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": "CWE-269",
+            "files_returned": 1,
+            "tool_budget": 4,
+            "duration_seconds": 56.4
+          }
+        },
+        {
+          "ruleId": "antares.cwe-918",
+          "level": "note",
+          "message": {
+            "text": "CWE-918: fisier candidat, localizat de Antares (2 fisiere returnate pentru acest CWE)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/home/tiberiu/soc-lab/sample_repo/app/apis/orders/utils.py"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": "CWE-918",
+            "files_returned": 2,
+            "tool_budget": 4,
+            "duration_seconds": 19.8
+          }
+        },
+        {
+          "ruleId": "antares.cwe-918",
+          "level": "note",
+          "message": {
+            "text": "CWE-918: fisier candidat, localizat de Antares (2 fisiere returnate pentru acest CWE)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/home/tiberiu/soc-lab/sample_repo/app/apis/menu/utils.py"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": "CWE-918",
+            "files_returned": 2,
+            "tool_budget": 4,
+            "duration_seconds": 19.8
+          }
+        }
+      ]
+    }
+  ]
+}
