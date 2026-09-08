@@ -33,6 +33,10 @@ from code_scanner import scan
 from correlate import Correlation, best_overlap, decide
 from detect_web import RULES, fetch_http_events, inspect
 
+_AUDIT = Path(__file__).resolve().parent.parent / "audit"
+import sys as _s; _s.path.insert(0, str(_AUDIT))
+from known_findings import lookup_route  # noqa: E402
+
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
@@ -77,17 +81,34 @@ def main() -> int:
             route=a.url_path, payload=a.url_query, src_ip=a.source_ip,
             cwe_id=d.cwe, cwe_label=d.cwe,
         )
-        try:
-            sr, cached = scan(args.repo, d.cwe, cache_dir=args.cache_dir)
-            c.scan_status = sr.status
-            c.candidate_files = list(sr.files)
-            c.file_count = len(sr.files)
-            c.has_surface = sr.has_surface
-            c.scan_from_cache = cached
-            c.route_match, c.matched_file = best_overlap(a.url_path, sr.files)
-        except Exception as exc:  # noqa: BLE001
-            c.scan_status = "error"
-            c.rationale.append(f"scanare esuata: {type(exc).__name__}")
+        known = lookup_route(a.url_path or "", es=args.es,
+                             user=args.user, password=args.password,
+                             cwe=d.cwe)
+        if known.known_vulnerable:
+            best = known.best
+            c.scan_status = "known"
+            c.candidate_files = [f.file for f in known.findings]
+            c.file_count = len(known.findings)
+            c.has_surface = True
+            c.route_match, c.matched_file = 1.0, best.file
+            c.rationale.append(
+                f"finding cunoscut din audit: {best.file} "
+                f"[{', '.join(best.tools)}] -- modelul nu a fost chemat"
+            )
+            correlations.append(decide(c))
+            print(f"\r    {i}/{len(flagged)} (din audit)", end="", flush=True)
+            continue
+
+        # Auditul e sursa de adevar. Ce nu e in index nu se reinvestigheaza
+        # la fiecare alerta: modelul returneaza fisiere pentru orice CWE
+        # (TNR 0.0, O-013), iar fara confirmare din audit n-ai cu ce filtra.
+        # Necunoscutul escaladeaza, nu se inchide.
+        c.scan_status = "not_in_audit"
+        c.has_surface = False
+        c.rationale.append(
+            "niciun finding cunoscut pentru aceasta ruta; "
+            "auditul periodic nu a identificat cod vulnerabil corespunzator"
+        )
         correlations.append(decide(c))
         print(f"\r    {i}/{len(flagged)}", end="", flush=True)
     print("\n")

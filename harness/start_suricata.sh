@@ -24,7 +24,7 @@ RULES="/var/lib/suricata/rules/web-only.rules"
 SERVER_IP=$(docker inspect "$CONTAINER" \
   --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' 2>/dev/null)
 
-if [ -z "$SERVER_IP" ]; then
+if [ -z "$SERVER_IP" ] || [ "$SERVER_IP" = "invalid IP" ]; then
   echo "EROARE: containerul $CONTAINER nu ruleaza."
   echo "  cd ~/soc-lab/sample_repo && docker compose up -d"
   exit 1
